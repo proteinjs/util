@@ -1217,7 +1217,7 @@ __metadata:
   resolution: "@proteinjs/util-node@workspace:packages/node"
   dependencies:
     "@dagrejs/graphlib": "npm:2.1.4"
-    "@proteinjs/util": "npm:^1.0.8"
+    "@proteinjs/util": "npm:^1.0.9"
     "@types/fs-extra": "npm:11.0.2"
     "@types/graphlib": "npm:2.1.6"
     "@types/jest": "npm:^29.5.4"
@@ -1230,7 +1230,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@proteinjs/util@npm:^1.0.8, @proteinjs/util@workspace:packages/common":
+"@proteinjs/util@npm:^1.0.9, @proteinjs/util@workspace:packages/common":
   version: 0.0.0-use.local
   resolution: "@proteinjs/util@workspace:packages/common"
   dependencies:
