@@ -1,4 +1,4 @@
-name: Build and publish
+name: Build and Publish
 
 on:
   push:
@@ -38,11 +38,10 @@ jobs:
           yarn workspaces foreach --all run test
 
       - name: Version and Publish
-        if: github.ref == 'refs/heads/main' # Ensures versioning & publishing happens only on the main branch
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          npx lerna version --yes --no-push --conventional-commits --no-git-tag-version
-          npx lerna publish from-git --yes --dry-run
+          npx lerna version --yes --conventional-commits -m "chore(release): publish %s [skip ci]"
+          npx lerna publish from-git --yes
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
