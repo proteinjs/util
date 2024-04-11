@@ -19,7 +19,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20.3.1'
-          cache: 'yarn'
 
       - name: Set yarn version (berry)
         run: |
