@@ -805,7 +805,7 @@ __metadata:
     "@dagrejs/graphlib": "npm:2.1.4"
     "@types/graphlib": "npm:2.1.6"
     "@types/jsesc": "npm:2.5.1"
-    "@types/node": "npm:14.0.13"
+    "@types/node": "npm:20.5.9"
     jsesc: "npm:3.0.1"
     typescript: "npm:5.2.2"
   languageName: unknown
@@ -960,13 +960,6 @@ __metadata:
   dependencies:
     undici-types: "npm:~5.26.4"
   checksum: 10c0/dce80d63a3b91892b321af823d624995c61e39c6a223cc0ac481a44d337640cc46931d33efb3beeed75f5c85c3bda1d97cef4c5cd4ec333caf5dee59cff6eca0
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:14.0.13":
-  version: 14.0.13
-  resolution: "@types/node@npm:14.0.13"
-  checksum: 10c0/5edf0b5ee9f4a0d7dcfe6775d097f85395bf1d9cdbc54410cccb562ef7c5198cb49cad299028a0bc86f21e7c2895a97b0a2a6813408ca6144eb6763f545e0b14
   languageName: node
   linkType: hard
 
