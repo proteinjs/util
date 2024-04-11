@@ -1,6 +1,6 @@
 {
     "name": "@proteinjs/util",
-    "version": "1.0.12",
+    "version": "1.0.13",
     "description": "Runtime-agnostic util libs",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
