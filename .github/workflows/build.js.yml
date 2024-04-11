@@ -44,6 +44,7 @@ jobs:
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
+          git fetch --depth=1 origin +refs/tags/*:refs/tags/*
           npx lerna version --yes --no-private --conventional-commits -m "chore(release): publish %s [skip ci]"
           npx lerna publish from-git --yes --no-private
         env:
