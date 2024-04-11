@@ -1,26 +1,16 @@
-name: Build
+name: Build and publish
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
     branches:
       - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    services:
-      mariadb:
-        image: mariadb:10.5
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_DATABASE: test
-        ports:
-          - 3306:3306
-      spanner-emulator:
-        image: gcr.io/cloud-spanner-emulator/emulator
-        ports:
-          - 9010:9010
-          - 9020:9020
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -29,36 +19,26 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20.3.1'
+          cache: 'yarn'
 
-      - name: Run build.sh
-        run: ./build.sh
+      - name: Install packages
+        run: |
+          yarn install
       
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v2'
-        with:
-          version: '>= 363.0.0'
-
-      - name: Configure gcloud for Spanner Emulator
+      - name: Build packages
         run: |
-          gcloud config configurations create emulator || gcloud config configurations activate emulator
-          gcloud config set auth/disable_credentials true
-          gcloud config set project proteinjs-test
-          gcloud config set api_endpoint_overrides/spanner http://localhost:9020/
+          yarn workspaces foreach --all --topological run build
 
-      - name: Create Spanner Instance
+      - name: Test packages
         run: |
-          gcloud spanner instances create proteinjs-test --config=emulator-config --description="Protein JS Test Instance" --nodes=1
+          yarn workspaces foreach --all run test
 
-      - name: Create Spanner Database
+      - name: Version and Publish
+        if: github.ref == 'refs/heads/main' # Ensures versioning & publishing happens only on the main branch
         run: |
-          gcloud spanner databases create test --instance=proteinjs-test
-
-      - name: Run Tests
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          npx lerna version --yes --no-push --conventional-commits --no-git-tag-version
+          npx lerna publish from-git --yes --dry-run
         env:
-          SPANNER_EMULATOR_HOST: localhost:9020
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_USER: root
-          MYSQL_PASSWORD: ""
-          MYSQL_DATABASE: test
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: ./test.sh
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
