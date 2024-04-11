@@ -21,6 +21,11 @@ jobs:
           node-version: '20.3.1'
           cache: 'yarn'
 
+      - name: Set yarn version (berry)
+        run: |
+          corepack enable
+          yarn set version 4.1.1
+      
       - name: Install packages
         run: |
           yarn install
