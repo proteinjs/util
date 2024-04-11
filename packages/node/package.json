@@ -8,6 +8,9 @@
         "type": "git",
         "url": "git+https://github.com/proteinjs/util.git"
     },
+    "publishConfig": {
+        "access": "public"
+    },
     "bugs": {
         "url": "https://github.com/proteinjs/util/issues"
     },
