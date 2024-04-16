@@ -16,7 +16,6 @@
     "paths": { 
       "@dagrejs/graphlib": ["./types/types.d.ts"]
     },
-    "typeRoots": ["./node_modules/@types"],
     "types": ["node"]
   }
 }
