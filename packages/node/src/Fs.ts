@@ -31,6 +31,10 @@ export class Fs {
     await fs.mkdir(path);
   }
 
+  static async deleteFolder(path: string) {
+    await fs.rm(path, { recursive: true, force: true });
+  }
+
   static async readFiles(filePaths: string[]) {
     const fileMap: FileContentMap = {};
     for (let filePath of filePaths) {

@@ -1,6 +1,6 @@
 import ts from 'typescript';
-import { Logger } from '@proteinjs/util';
-const graphlib = require('@dagrejs/graphlib');
+import * as path from 'path';
+import { Logger, Graph, GraphAlgorithms } from '@proteinjs/util';
 import { cmd } from './cmd';
 import { Fs } from './Fs';
 
@@ -12,9 +12,20 @@ export type Package = {
 }
 
 export type LocalPackage = {
+  name: string,
   filePath: string, 
   packageJson: any
 };
+
+export type LocalPackageMap = {
+  [packageName: string]: LocalPackage
+};
+
+export type WorkspaceMetadata = {
+  packageMap: LocalPackageMap,
+  packageGraph: any, // @dagrejs/graphlib.Graph
+  sortedPackageNames: string[], // local package names, in dependency order (ie. if a depends on b, [b, a] will be returned)
+}
 
 export class PackageUtil {
   private static LOGGER = new Logger('PackageUtil');
@@ -157,13 +168,13 @@ export class PackageUtil {
    * @param globIgnorePatterns already includes: ['**\/node_modules/**', '**\/dist/**']
    * @returns {[packageName: string]: LocalPackage}
    */
-  static async getLocalPackageMap(dir: string, globIgnorePatterns: string[] = []) {
+  static async getLocalPackageMap(dir: string, globIgnorePatterns: string[] = []): Promise<LocalPackageMap> {
     const packageMap: {[packageName: string]: LocalPackage} = {};
     const filePaths = await Fs.getFilePathsMatchingGlob(dir, '**/package.json', ['**/node_modules/**', '**/dist/**', ...globIgnorePatterns]);
     for (let filePath of filePaths) {
       const packageJson = JSON.parse(await Fs.readFile(filePath));
       const name = packageJson['name'];
-      packageMap[name] = { filePath, packageJson };
+      packageMap[name] = { name, filePath, packageJson };
     }
 
     return packageMap;
@@ -175,32 +186,32 @@ export class PackageUtil {
    * If packagea depends on packageb, nodes with ids packagea and packageb will be added to the graph. 
    * An edge from packagea -> packageb will be added to the graph as well.
    * 
-   * You can get dependency order of packages by calling: @dagrejs/graphlib.alg.topsort(graph).reverse()
+   * You can get dependency order of packages by calling: `PackageUtil.getDependencyOrder`
    * 
    * @param packageJsons an array of package.json objects
-   * @returns a @dagrejs/graphlib.Graph
+   * @returns @dagrejs/graphlib.Graph
    */
-  static async getPackageDependencyGraph(packageJsons: any[]) {
-    const graph = new graphlib.Graph();
-    for (let packageJson of packageJsons) {
-      const packageName = packageJson['name'];
+  static async getPackageDependencyGraph(packageMap: LocalPackageMap) {
+    const graph = new Graph();
+    for (let localPackage of Object.values(packageMap)) {
+      const packageName = localPackage.packageJson['name'];
       if (!graph.hasNode(packageName))
         graph.setNode(packageName);
 
-      PackageUtil.addDependencies(packageName, packageJson['dependencies'], graph);
-      PackageUtil.addDependencies(packageName, packageJson['devDependencies'], graph);
+      PackageUtil.addDependencies(packageName, localPackage.packageJson['dependencies'], graph, packageMap);
+      PackageUtil.addDependencies(packageName, localPackage.packageJson['devDependencies'], graph, packageMap);
     }
 
     return graph;
   }
 
-  private static addDependencies(sourcePackageName: string, dependencies: any, graph: any) {
+  private static addDependencies(sourcePackageName: string, dependencies: any, graph: any, packageMap: LocalPackageMap) {
     if (!dependencies)
       return;
 
     for (let dependencyPackageName of Object.keys(dependencies)) {
       const dependencyPackageVersion = dependencies[dependencyPackageName] as string;
-      if (!(dependencyPackageVersion.startsWith('file:') || dependencyPackageVersion.startsWith('.')))
+      if (!(dependencyPackageVersion.startsWith('file:') || dependencyPackageVersion.startsWith('.') || !!packageMap[dependencyPackageName]))
         continue;
 
       if (!graph.hasNode(dependencyPackageName))
@@ -212,5 +223,64 @@ export class PackageUtil {
 
   static async hasTests(packageDir: string): Promise<boolean> {
     return (await Fs.getFilePathsMatchingGlob(packageDir, 'test/**/*.test.ts')).length > 0;
+  }
+
+  /**
+   * Get package names in reverse topological sort order. Useful for building and installing dependencies.
+   * @param packageDependencyGraph @dagrejs/graphlib.Graph
+   * @returns package names in dependency order (ie. if a depends on b, [b, a] will be returned)
+   */
+  static getDependencyOrder(packageDependencyGraph: any): string[] {
+    return GraphAlgorithms.topsort(packageDependencyGraph).reverse();
+  }
+
+  /**
+   * Get metadata about a workspace, such as package dependency relationships and fs paths.
+   * @param workspacePath path to the directory containing the repo
+   * @returns `WorkspaceMetadata`
+   */
+  static async getWorkspaceMetadata(workspacePath: string): Promise<WorkspaceMetadata> {
+    const packageMap = await PackageUtil.getLocalPackageMap(workspacePath);
+    const packageGraph = await PackageUtil.getPackageDependencyGraph(packageMap);
+    const sortedPackageNames = PackageUtil.getDependencyOrder(packageGraph).filter(packageName => !!packageMap[packageName]);
+    return {
+      packageMap,
+      packageGraph,
+      sortedPackageNames
+    };
+  }
+
+  /**
+   * Symlink the dependencies of `localPackage` to other local packages in the workspace.
+   * @param localPackage package to symlink the dependencies of
+   * @param localPackageMap `LocalPackageMap` of the workspace
+   * @param logger optionally provide a logger to capture this method's logging
+   */
+  static async symlinkDependencies(localPackage: LocalPackage, localPackageMap: LocalPackageMap, logger?: Logger) {
+    const packageDir = path.dirname(localPackage.filePath);
+    const nodeModulesPath = path.resolve(packageDir, 'node_modules');
+    if (!await Fs.exists(nodeModulesPath))
+      await Fs.createFolder(nodeModulesPath);
+  
+    const linkDependencies = async (dependencies: Record<string, string> | undefined,) => {
+      if (!dependencies)
+        return;
+    
+      for (let dependencyPackageName in dependencies) {
+        const dependencyPath = localPackageMap[dependencyPackageName]?.filePath ? path.dirname(localPackageMap[dependencyPackageName].filePath) : null;
+        if (!dependencyPath)
+          continue;
+    
+        const symlinkPath = path.join(nodeModulesPath, dependencyPackageName);
+        if (await Fs.exists(symlinkPath))
+          await Fs.deleteFolder(symlinkPath);
+    
+        await cmd('ln', ['-s', dependencyPath, symlinkPath], { cwd: packageDir });
+        logger?.debug(`Symlinked dependency (${dependencyPackageName}) ${symlinkPath} -> ${dependencyPath}`);
+      }
+    };
+  
+    await linkDependencies(localPackage.packageJson.dependencies);
+    await linkDependencies(localPackage.packageJson.devDependencies);
   }
 }
