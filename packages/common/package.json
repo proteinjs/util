@@ -18,6 +18,7 @@
     "author": "Brent Bahry",
     "license": "ISC",
     "scripts": {
+        "clean": "rm -rf dist/ node_modules/ package-lock.json",
         "build": "tsc",
         "watch": "tsc -w -p ."
     },

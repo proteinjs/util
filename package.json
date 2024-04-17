@@ -1,11 +1,13 @@
 {
-  "name": "util",
-  "packageManager": "yarn@4.1.1",
+  "name": "root",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "scripts": {
+    "build-workspace": "build-workspace",
+    "test-workspace": "test-workspace",
+    "watch-workspace": "watch-workspace"
+  },
   "devDependencies": {
+    "@proteinjs/build": "^1.0.9",
     "lerna": "8.1.2"
   }
 }
