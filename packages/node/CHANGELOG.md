@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.0.21](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.0.20...@proteinjs/util-node@1.0.21) (2024-04-18)
+
+
+### Bug Fixes
+
+* `Fs` use fsExtra for deleteFolder ([4f79f2b](https://github.com/proteinjs/util/commit/4f79f2b01e34c77f63cd4793deb4e7ee62428df8))
+
+
+
+
+
 ## [1.0.20](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.0.19...@proteinjs/util-node@1.0.20) (2024-04-18)
 
 **Note:** Version bump only for package @proteinjs/util-node
