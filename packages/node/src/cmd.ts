@@ -66,7 +66,7 @@ export async function cmd(command: string, args?: readonly string[], options: Ch
 
 function prefixLog(log: string, prefix?: string) {
   if (prefix)
-    return `${prefix}${log.replace(/\n/g, `\n${prefix}`)}`;
+    return `${prefix}${log.replace(/\n(?!$)/g, `\n${prefix}`)}`;
 
   return log;
 }

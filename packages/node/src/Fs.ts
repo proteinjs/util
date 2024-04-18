@@ -32,7 +32,7 @@ export class Fs {
   }
 
   static async deleteFolder(path: string) {
-    await fs.rm(path, { recursive: true, force: true });
+    await fsExtra.remove(path);
   }
 
   static async readFiles(filePaths: string[]) {
