@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.0.22](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.0.21...@proteinjs/util-node@1.0.22) (2024-04-19)
+
+
+### Bug Fixes
+
+* [util-node] added dep (was devDep) on typescript ([b9d20ca](https://github.com/proteinjs/util/commit/b9d20cad9666a13cb74c6a431f0f010ba8f9117e))
+
+
+
+
+
 ## [1.0.21](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.0.20...@proteinjs/util-node@1.0.21) (2024-04-18)
 
 
