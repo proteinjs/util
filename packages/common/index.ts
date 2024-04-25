@@ -4,3 +4,4 @@ export * from './src/jsonCycle';
 export * from './src/Logger';
 export * from './src/ansiiColors';
 export * from './src/StringUtil';
+export * from './src/isInstanceOf';
