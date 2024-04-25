@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.1.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.0.23...@proteinjs/util-node@1.1.0) (2024-04-25)
+
+
+### Features
+
+* added `isInstanceOf` to replace use of `instanceof` for use in published packages. supports inheritance ([e61aba1](https://github.com/proteinjs/util/commit/e61aba135c20e340d5c7b7c46795fa1131620fbd))
+
+
+
+
+
 ## [1.0.23](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.0.22...@proteinjs/util-node@1.0.23) (2024-04-20)
 
 **Note:** Version bump only for package @proteinjs/util-node
