@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.2.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.1.0...@proteinjs/util-node@1.2.0) (2024-04-30)
+
+
+### Features
+
+* added `LogColorWrapper` for simple log coloring ([9f42d48](https://github.com/proteinjs/util/commit/9f42d4805421c4b43b0b04b7979ee7793c87cb68))
+* updated `LocalPackage` and `WorkspaceMetadata` to have workspace root metadata ([f2606bc](https://github.com/proteinjs/util/commit/f2606bc77adbadc82ca10e467d8a0044d6e3612b))
+
+
+
+
+
 # [1.1.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.0.23...@proteinjs/util-node@1.1.0) (2024-04-25)
 
 

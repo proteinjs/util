@@ -1,6 +1,6 @@
 {
     "name": "@proteinjs/util-node",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Util libs for node",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
