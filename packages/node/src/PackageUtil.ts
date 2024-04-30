@@ -14,7 +14,12 @@ export type Package = {
 export type LocalPackage = {
   name: string,
   filePath: string, 
-  packageJson: any
+  packageJson: any,
+  workspace?: {
+    path: string,
+    rootPackageJson: any,
+    lernaJson?: any,
+  },
 };
 
 export type LocalPackageMap = {
@@ -25,6 +30,7 @@ export type WorkspaceMetadata = {
   packageMap: LocalPackageMap,
   packageGraph: any, // @dagrejs/graphlib.Graph
   sortedPackageNames: string[], // local package names, in dependency order (ie. if a depends on b, [b, a] will be returned)
+  workspaceToPackageMap: {[workspacePath: string]: string[]}, // string[] is names of packages in workspace
 }
 
 export class PackageUtil {
@@ -174,11 +180,46 @@ export class PackageUtil {
     for (let filePath of filePaths) {
       const packageJson = JSON.parse(await Fs.readFile(filePath));
       const name = packageJson['name'];
-      packageMap[name] = { name, filePath, packageJson };
+      packageMap[name] = { 
+        name, 
+        filePath, 
+        packageJson,
+      };
+      const packageDir = path.dirname(filePath);
+      const parentDir = path.dirname(packageDir);
+      const workspacePackageJsonPath = await PackageUtil.findPackageJsonPath(parentDir);
+      if (workspacePackageJsonPath) {
+        const workspacePath = path.dirname(workspacePackageJsonPath);
+        const workspacePackageJson = JSON.parse(await Fs.readFile(workspacePackageJsonPath));
+        const workspaceLernaJsonPath = path.join(workspacePath, 'lerna.json');
+        const workspaceLernaJson = await Fs.exists(workspaceLernaJsonPath) ? JSON.parse(await Fs.readFile(workspaceLernaJsonPath)) : undefined;
+        packageMap[name].workspace = {
+          path: workspacePath,
+          rootPackageJson: workspacePackageJson,
+          lernaJson: workspaceLernaJson,
+        };
+      }
     }
 
     return packageMap;
   }
+
+/**
+ * Finds the nearest package.json in the directory hierarchy starting from the given directory.
+ * @param dir The starting directory path to search from.
+ * @returns The path to the closest package.json, or `undefined` if one can't be found
+ */
+private static async findPackageJsonPath(dir: string): Promise<string|undefined> {
+  const packagePath = path.join(dir, 'package.json');
+  if (await Fs.exists(packagePath))
+    return packagePath;
+
+  const parentDir = path.dirname(dir);
+  if (parentDir === dir)
+    return undefined;
+
+  return PackageUtil.findPackageJsonPath(parentDir);
+}
 
   /**
    * Generate a dependency graph of package names. 
@@ -234,6 +275,22 @@ export class PackageUtil {
     return GraphAlgorithms.topsort(packageDependencyGraph).reverse();
   }
 
+  private static getWorkspaceToPackageMap(packageMap: LocalPackageMap) {
+    const workspaceToPackageMap: {[workspacePath: string]: string[]} = {};
+    for (let packageName of Object.keys(packageMap)) {
+      const localPackage = packageMap[packageName];
+      if (!localPackage.workspace)
+        continue;
+      
+      if (!workspaceToPackageMap[localPackage.workspace.path])
+        workspaceToPackageMap[localPackage.workspace.path] = [];
+
+      workspaceToPackageMap[localPackage.workspace.path].push(packageName);
+    }
+
+    return workspaceToPackageMap;
+  }
+
   /**
    * Get metadata about a workspace, such as package dependency relationships and fs paths.
    * @param workspacePath path to the directory containing the repo
@@ -243,10 +300,12 @@ export class PackageUtil {
     const packageMap = await PackageUtil.getLocalPackageMap(workspacePath);
     const packageGraph = await PackageUtil.getPackageDependencyGraph(packageMap);
     const sortedPackageNames = PackageUtil.getDependencyOrder(packageGraph).filter(packageName => !!packageMap[packageName]);
+    const workspaceToPackageMap = PackageUtil.getWorkspaceToPackageMap(packageMap);
     return {
       packageMap,
       packageGraph,
-      sortedPackageNames
+      sortedPackageNames,
+      workspaceToPackageMap,
     };
   }
 
