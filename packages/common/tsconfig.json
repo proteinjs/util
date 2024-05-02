@@ -15,7 +15,6 @@
     "baseUrl": ".",
     "paths": { 
       "@dagrejs/graphlib": ["./types/types.d.ts"]
-    },
-    "types": ["node"]
+		}, 
   }
 }
