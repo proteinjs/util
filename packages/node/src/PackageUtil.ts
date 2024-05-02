@@ -334,8 +334,9 @@ private static async findPackageJsonPath(dir: string): Promise<string|undefined>
         if (await Fs.exists(symlinkPath))
           await Fs.deleteFolder(symlinkPath);
     
+        logger?.debug(`[${localPackage.name}] Symlinking dependency (${dependencyPackageName}) ${symlinkPath} -> ${dependencyPath}`);
         await cmd('ln', ['-s', dependencyPath, symlinkPath], { cwd: packageDir });
-        logger?.debug(`Symlinked dependency (${dependencyPackageName}) ${symlinkPath} -> ${dependencyPath}`);
+        logger?.debug(`[${localPackage.name}] Symlinked dependency (${dependencyPackageName}) ${symlinkPath} -> ${dependencyPath}`);
       }
     };
   
