@@ -1,21 +1,19 @@
 {
-    "compilerOptions": {
-      "target": "es5",
-      "module": "commonjs",
-      "declaration": true,
-      "sourceMap": true,
-      "outDir": "./dist/",
-      "strict": true,
-      "noImplicitAny": true,
-      "esModuleInterop": true,
-      "skipLibCheck": true,
-      "forceConsistentCasingInFileNames": true,
-      "resolveJsonModule": true,
-      "baseUrl": "./",
-      "paths": { "*": ["types/*"] },
-      "types": ["node"]
-    },
-    "include": [
-		  "index.ts"
-    ]
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "./dist/",
+    "strict": true,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "baseUrl": "./",
+    "paths": { "*": ["types/*"] },
+    "types": ["node"]
+  },
+  "include": ["index.ts"]
 }
