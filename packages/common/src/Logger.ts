@@ -1,4 +1,4 @@
-export type LogLevel = 'debug'|'info'|'warn'|'error';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export class Logger {
   private name?: string;
@@ -12,7 +12,14 @@ export class Logger {
   }
 
   private prefix() {
-    const timestamp = new Date().toLocaleString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' });
+    const timestamp = new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+    });
     const namePrefix = this.name ? ` [${this.name}]` : '';
     return `${timestamp}${namePrefix}`;
   }
@@ -22,25 +29,29 @@ export class Logger {
   }
 
   debug(message: string, ignoreLimitMessageLength: boolean = false) {
-    if (this.logLevel == 'info' || this.logLevel == 'warn' || this.logLevel == 'error')
+    if (this.logLevel == 'info' || this.logLevel == 'warn' || this.logLevel == 'error') {
       return;
+    }
 
-    if (!ignoreLimitMessageLength)
+    if (!ignoreLimitMessageLength) {
       message = this.limitMessageLength(message);
-    
+    }
+
     console.debug(`${this.prefix()} ${message}`);
   }
 
   info(message: string, limit?: number) {
-    if (this.logLevel == 'warn' || this.logLevel == 'error')
+    if (this.logLevel == 'warn' || this.logLevel == 'error') {
       return;
+    }
 
     console.info(`${this.prefix()} ${this.limitMessageLength(message, limit)}`);
   }
 
   warn(message: string, limit?: number) {
-    if (this.logLevel == 'error')
+    if (this.logLevel == 'error') {
       return;
+    }
 
     console.warn(`${this.prefix()} ${this.limitMessageLength(message, limit)}`);
   }
@@ -51,8 +62,9 @@ export class Logger {
 
   private limitMessageLength(message: string, limit?: number) {
     const resolvedLimit = typeof limit !== 'undefined' ? limit : this.limit;
-    if (message.length > resolvedLimit)
+    if (message.length > resolvedLimit) {
       return message.slice(0, resolvedLimit) + '...';
+    }
 
     return message;
   }

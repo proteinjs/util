@@ -13,8 +13,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
-    "paths": { 
+    "paths": {
       "@dagrejs/graphlib": ["./types/types.d.ts"]
-		}, 
+    }
   }
 }
