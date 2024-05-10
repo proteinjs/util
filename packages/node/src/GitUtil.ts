@@ -8,8 +8,9 @@ export class GitUtil {
     const args = ['clone', 'https://github.com/brentbahry/app-template.git', directory];
     const command = 'git ' + args.join(' ');
     let envVars;
-    if (directory)
-      envVars = { cwd: directory }
+    if (directory) {
+      envVars = { cwd: directory };
+    }
     GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
     GitUtil.LOGGER.info(`Ran command: ${command}`);
@@ -19,8 +20,9 @@ export class GitUtil {
     const args = ['init'];
     const command = 'git ' + args.join(' ');
     let envVars;
-    if (directory)
-      envVars = { cwd: directory }
+    if (directory) {
+      envVars = { cwd: directory };
+    }
     GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
     GitUtil.LOGGER.info(`Ran command: ${command}`);
@@ -30,8 +32,9 @@ export class GitUtil {
     const args = ['remote', 'set-url', 'origin', remote];
     const command = 'git ' + args.join(' ');
     let envVars;
-    if (directory)
-      envVars = { cwd: directory }
+    if (directory) {
+      envVars = { cwd: directory };
+    }
     GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
     GitUtil.LOGGER.info(`Ran command: ${command}`);
@@ -41,8 +44,9 @@ export class GitUtil {
     const args = ['remote', 'add', 'origin', remote];
     const command = 'git ' + args.join(' ');
     let envVars;
-    if (directory)
-      envVars = { cwd: directory }
+    if (directory) {
+      envVars = { cwd: directory };
+    }
     GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
     GitUtil.LOGGER.info(`Ran command: ${command}`);
@@ -52,8 +56,9 @@ export class GitUtil {
     const args = ['commit', '-m', message];
     const command = 'git ' + args.join(' ');
     let envVars;
-    if (directory)
-      envVars = { cwd: directory }
+    if (directory) {
+      envVars = { cwd: directory };
+    }
     GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
     GitUtil.LOGGER.info(`Ran command: ${command}`);
@@ -63,8 +68,9 @@ export class GitUtil {
     const args = ['pull'];
     const command = 'git ' + args.join(' ');
     let envVars;
-    if (directory)
-      envVars = { cwd: directory }
+    if (directory) {
+      envVars = { cwd: directory };
+    }
     GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
     GitUtil.LOGGER.info(`Ran command: ${command}`);
@@ -74,8 +80,9 @@ export class GitUtil {
     const args = ['push'];
     const command = 'git ' + args.join(' ');
     let envVars;
-    if (directory)
-      envVars = { cwd: directory }
+    if (directory) {
+      envVars = { cwd: directory };
+    }
     GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
     GitUtil.LOGGER.info(`Ran command: ${command}`);
@@ -85,8 +92,9 @@ export class GitUtil {
     const args = ['status'];
     const command = 'git ' + args.join(' ');
     let envVars;
-    if (directory)
-      envVars = { cwd: directory }
+    if (directory) {
+      envVars = { cwd: directory };
+    }
     GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
     GitUtil.LOGGER.info(`Ran command: ${command}`);
@@ -96,8 +104,9 @@ export class GitUtil {
     const args = ['add', '.'];
     const command = 'git ' + args.join(' ');
     let envVars;
-    if (directory)
-      envVars = { cwd: directory }
+    if (directory) {
+      envVars = { cwd: directory };
+    }
     GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
     GitUtil.LOGGER.info(`Ran command: ${command}`);
@@ -122,11 +131,11 @@ export const cloneAppTemplatePackagesFunction = {
           description: 'The directory to clone the packages to',
         },
       },
-      required: ['directory']
+      required: ['directory'],
     },
   },
   call: async (params: { directory: string }) => await GitUtil.cloneAppTemplatePackages(params.directory),
-}
+};
 
 export const initFunctionName = 'gitInit';
 export const initFunction = {
@@ -141,11 +150,11 @@ export const initFunction = {
           description: 'The directory to initialize the git repository in',
         },
       },
-      required: ['directory']
+      required: ['directory'],
     },
   },
   call: async (params: { directory: string }) => await GitUtil.init(params.directory),
-}
+};
 
 export const setRemoteFunctionName = 'gitSetRemote';
 export const setRemoteFunction = {
@@ -164,11 +173,12 @@ export const setRemoteFunction = {
           description: 'The remote to set',
         },
       },
-      required: ['directory', 'remote']
+      required: ['directory', 'remote'],
     },
   },
-  call: async (params: { directory: string, remote: string }) => await GitUtil.setRemote(params.directory, params.remote),
-}
+  call: async (params: { directory: string; remote: string }) =>
+    await GitUtil.setRemote(params.directory, params.remote),
+};
 
 export const addRemoteFunctionName = 'gitAddRemote';
 export const addRemoteFunction = {
@@ -187,11 +197,12 @@ export const addRemoteFunction = {
           description: 'The remote to add',
         },
       },
-      required: ['directory', 'remote']
+      required: ['directory', 'remote'],
     },
   },
-  call: async (params: { directory: string, remote: string }) => await GitUtil.addRemote(params.directory, params.remote),
-}
+  call: async (params: { directory: string; remote: string }) =>
+    await GitUtil.addRemote(params.directory, params.remote),
+};
 
 export const commitFunctionName = 'gitCommit';
 export const commitFunction = {
@@ -210,11 +221,12 @@ export const commitFunction = {
           description: 'The commit message',
         },
       },
-      required: ['directory', 'message']
+      required: ['directory', 'message'],
     },
   },
-  call: async (params: { directory: string, message: string }) => await GitUtil.commit(params.directory, params.message),
-}
+  call: async (params: { directory: string; message: string }) =>
+    await GitUtil.commit(params.directory, params.message),
+};
 
 export const pullFunctionName = 'gitPull';
 export const pullFunction = {
@@ -229,11 +241,11 @@ export const pullFunction = {
           description: 'The directory of the git repository',
         },
       },
-      required: ['directory']
+      required: ['directory'],
     },
   },
   call: async (params: { directory: string }) => await GitUtil.pull(params.directory),
-}
+};
 
 export const pushFunctionName = 'gitPush';
 export const pushFunction = {
@@ -248,11 +260,11 @@ export const pushFunction = {
           description: 'The directory of the git repository',
         },
       },
-      required: ['directory']
+      required: ['directory'],
     },
   },
   call: async (params: { directory: string }) => await GitUtil.push(params.directory),
-}
+};
 
 export const statusFunctionName = 'gitStatus';
 export const statusFunction = {
@@ -267,11 +279,11 @@ export const statusFunction = {
           description: 'The directory of the git repository',
         },
       },
-      required: ['directory']
+      required: ['directory'],
     },
   },
   call: async (params: { directory: string }) => await GitUtil.status(params.directory),
-}
+};
 
 export const addAllFunctionName = 'gitAddAll';
 export const addAllFunction = {
@@ -286,11 +298,11 @@ export const addAllFunction = {
           description: 'The directory of the git repository',
         },
       },
-      required: ['directory']
+      required: ['directory'],
     },
   },
   call: async (params: { directory: string }) => await GitUtil.addAll(params.directory),
-}
+};
 
 export const syncFunctionName = 'gitSync';
 export const syncFunction = {
@@ -305,11 +317,11 @@ export const syncFunction = {
           description: 'The directory of the git repository',
         },
       },
-      required: ['directory']
+      required: ['directory'],
     },
   },
   call: async (params: { directory: string }) => await GitUtil.sync(params.directory),
-}
+};
 
 export const gitFunctions = [
   cloneAppTemplatePackagesFunction,
@@ -322,4 +334,4 @@ export const gitFunctions = [
   statusFunction,
   addAllFunction,
   syncFunction,
-]
+];
