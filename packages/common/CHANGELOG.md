@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.1.1](https://github.com/proteinjs/util/compare/@proteinjs/util@1.1.0...@proteinjs/util@1.1.1) (2024-05-10)
+
+
+### Bug Fixes
+
+* add linting and lint all files ([425c7a6](https://github.com/proteinjs/util/commit/425c7a6bee816a6b7cfafcb4b8d59a22cba5ec04))
+
+
+
+
+
 # [1.1.0](https://github.com/proteinjs/util/compare/@proteinjs/util@1.0.18...@proteinjs/util@1.1.0) (2024-04-25)
 
 ### Bug Fixes
