@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.2.0](https://github.com/proteinjs/util/compare/@proteinjs/util@1.1.2...@proteinjs/util@1.2.0) (2024-07-05)
+
+
+### Features
+
+* add debouncer ([#1](https://github.com/proteinjs/util/issues/1)) ([209f157](https://github.com/proteinjs/util/commit/209f1575f8370ba94033bdfbcebd745e1aa5aa1e))
+
+
+
+
+
 ## [1.1.2](https://github.com/proteinjs/util/compare/@proteinjs/util@1.1.1...@proteinjs/util@1.1.2) (2024-05-10)
 
 
