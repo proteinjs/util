@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.3.1](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.3.0...@proteinjs/util-node@1.3.1) (2024-07-06)
+
+
+### Bug Fixes
+
+* `Fs.createFolder` should be recursive so it creates parents if they don't exist ([6fda0dc](https://github.com/proteinjs/util/commit/6fda0dcd3302182a920eb8d909770b7accadddf0))
+
+
+
+
+
 # [1.3.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.2.2...@proteinjs/util-node@1.3.0) (2024-07-05)
 
 
