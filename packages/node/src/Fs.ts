@@ -28,7 +28,7 @@ export class Fs {
   }
 
   static async createFolder(path: string) {
-    await fs.mkdir(path);
+    await fs.mkdir(path, { recursive: true });
   }
 
   static async deleteFolder(path: string) {
