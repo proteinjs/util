@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.3.1](https://github.com/proteinjs/util/compare/@proteinjs/util@1.3.0...@proteinjs/util@1.3.1) (2024-07-12)
+
+
+### Bug Fixes
+
+* remove generateSecureToken and use within server code only ([5d16a1b](https://github.com/proteinjs/util/commit/5d16a1bc0666d1b61a5a4e197af1ae79516ea79c))
+
+
+
+
+
 # [1.3.0](https://github.com/proteinjs/util/compare/@proteinjs/util@1.2.0...@proteinjs/util@1.3.0) (2024-07-12)
 
 
