@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.3.0](https://github.com/proteinjs/util/compare/@proteinjs/util@1.2.0...@proteinjs/util@1.3.0) (2024-07-12)
+
+
+### Features
+
+* add function to generate token with crypto library ([9cb469c](https://github.com/proteinjs/util/commit/9cb469cae1e5e6fa390c3f42aa88820ab70bf289))
+
+
+
+
+
 # [1.2.0](https://github.com/proteinjs/util/compare/@proteinjs/util@1.1.2...@proteinjs/util@1.2.0) (2024-07-05)
 
 
