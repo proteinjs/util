@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.4.0](https://github.com/proteinjs/util/compare/@proteinjs/util@1.3.1...@proteinjs/util@1.4.0) (2024-08-05)
+
+
+### Features
+
+* add email regex ([3938f1d](https://github.com/proteinjs/util/commit/3938f1d5ca3aa4a5f2b98518a84468794110bfd1))
+
+
+
+
+
 ## [1.3.1](https://github.com/proteinjs/util/compare/@proteinjs/util@1.3.0...@proteinjs/util@1.3.1) (2024-07-12)
 
 
