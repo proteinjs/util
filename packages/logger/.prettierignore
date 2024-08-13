@@ -1,5 +1,4 @@
 node_modules/
 dist/
-generated/
 .DS_Store
-.npmrc
+*.md
