@@ -1,27 +1,35 @@
 import { InspectOptions } from 'util';
 import { LogLevel } from './LogLevel';
-import { LogWriter } from './LogWriter';
+import { getDefaultLogWriter, DefaultLogWriter } from './DefaultLogWriter';
 import { DevLogWriter } from './DevLogWriter';
 
-type LoggerParams = { name?: string; logLevel?: LogLevel; logWriter?: LogWriter };
+type LoggerParams = { name?: string; logLevel?: LogLevel; logWriter?: DefaultLogWriter };
 type Log = { message?: string; obj?: any; inspectOptions?: InspectOptions };
 type ErrorLog = Log & { error?: Error };
 
 export class Logger {
   private name?: string;
   private logLevel: LogLevel;
-  private logWriter: LogWriter;
+  private logWriter?: DefaultLogWriter;
 
   constructor({ name, logLevel, logWriter }: LoggerParams = {}) {
     if (name) {
       this.name = name;
     }
     this.logLevel = logLevel ?? 'info';
-    this.logWriter = logWriter ?? new DevLogWriter();
+    this.logWriter = logWriter;
+  }
+
+  private getLogWriter() {
+    if (!this.logWriter) {
+      this.logWriter = getDefaultLogWriter() ?? new DevLogWriter();
+    }
+
+    return this.logWriter;
   }
 
   log({ message, obj, inspectOptions }: Log) {
-    this.logWriter.write({
+    this.getLogWriter().write({
       loggerName: this.name,
       logLevel: 'info',
       timestamp: new Date(),
@@ -36,7 +44,7 @@ export class Logger {
       return;
     }
 
-    this.logWriter.write({
+    this.getLogWriter().write({
       loggerName: this.name,
       logLevel: 'debug',
       timestamp: new Date(),
@@ -51,7 +59,7 @@ export class Logger {
       return;
     }
 
-    this.logWriter.write({
+    this.getLogWriter().write({
       loggerName: this.name,
       logLevel: 'info',
       timestamp: new Date(),
@@ -66,7 +74,7 @@ export class Logger {
       return;
     }
 
-    this.logWriter.write({
+    this.getLogWriter().write({
       loggerName: this.name,
       logLevel: 'warn',
       timestamp: new Date(),
@@ -77,7 +85,7 @@ export class Logger {
   }
 
   error({ message, obj, inspectOptions, error }: ErrorLog) {
-    this.logWriter.write({
+    this.getLogWriter().write({
       loggerName: this.name,
       logLevel: 'error',
       timestamp: new Date(),

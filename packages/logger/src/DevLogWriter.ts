@@ -1,6 +1,6 @@
 import { inspect, InspectOptions } from 'util';
 import { LogLevel } from './LogLevel';
-import { Log } from './LogWriter';
+import { Log } from './DefaultLogWriter';
 
 export class DevLogWriter {
   private static COLORS = {
