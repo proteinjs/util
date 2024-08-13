@@ -1,6 +1,6 @@
 {
   "name": "@proteinjs/logger",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A simple logger",
   "main": "./dist/generated/index.js",
   "types": "./dist/generated/index.d.ts",
