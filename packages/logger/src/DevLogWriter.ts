@@ -5,6 +5,7 @@ import { Log } from './DefaultLogWriter';
 export class DevLogWriter {
   private static COLORS = {
     reset: '\x1b[0m',
+    gray: '\x1b[90m',
     green: '\x1b[32m',
     cyan: '\x1b[36m',
     yellow: '\x1b[33m',
@@ -46,7 +47,7 @@ export class DevLogWriter {
   }
 
   private prefix(timestamp: Date, loggerName?: string) {
-    const formattedTimestamp = this.formatDate(timestamp);
+    const formattedTimestamp = `${DevLogWriter.COLORS.gray}${this.formatDate(timestamp)}${DevLogWriter.COLORS.reset}`;
     const namePrefix = loggerName ? ` [${loggerName}]` : '';
     return `${formattedTimestamp}${namePrefix}`;
   }
