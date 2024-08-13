@@ -12,10 +12,12 @@ export class Logger {
   private logLevel: LogLevel;
   private logWriter: LogWriter;
 
-  constructor({ name, logLevel = 'info', logWriter = new DevLogWriter() }: LoggerParams) {
-    this.name = name;
-    this.logLevel = logLevel;
-    this.logWriter = logWriter;
+  constructor({ name, logLevel, logWriter }: LoggerParams = {}) {
+    if (name) {
+      this.name = name;
+    }
+    this.logLevel = logLevel ?? 'info';
+    this.logWriter = logWriter ?? new DevLogWriter();
   }
 
   log({ message, obj, inspectOptions }: Log) {
