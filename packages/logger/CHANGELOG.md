@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.0.4](https://github.com/proteinjs/util/compare/@proteinjs/logger@1.0.3...@proteinjs/logger@1.0.4) (2024-08-13)
+
+
+### Bug Fixes
+
+* `DevLogWriter` now colors the timestamp gray ([4178f39](https://github.com/proteinjs/util/commit/4178f39207964a39a8e81b252a2e57fe7458a366))
+
+
+
+
+
 ## [1.0.3](https://github.com/proteinjs/util/compare/@proteinjs/logger@1.0.2...@proteinjs/logger@1.0.3) (2024-08-13)
 
 
