@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.4.1](https://github.com/proteinjs/util/compare/@proteinjs/util@1.4.0...@proteinjs/util@1.4.1) (2024-08-16)
+
+
+### Bug Fixes
+
+* deprecated `Logger` ([1673a37](https://github.com/proteinjs/util/commit/1673a377945271da4d99b564acdecb22e397ba86))
+
+
+
+
+
 # [1.4.0](https://github.com/proteinjs/util/compare/@proteinjs/util@1.3.1...@proteinjs/util@1.4.0) (2024-08-05)
 
 
