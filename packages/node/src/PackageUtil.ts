@@ -1,6 +1,6 @@
 import ts from 'typescript';
 import * as path from 'path';
-import { Logger, Graph, GraphAlgorithms } from '@proteinjs/util';
+import { Graph, GraphAlgorithms } from '@proteinjs/util';
 import { cmd } from './cmd';
 import { Fs } from './Fs';
 
@@ -34,8 +34,6 @@ export type WorkspaceMetadata = {
 };
 
 export class PackageUtil {
-  private static LOGGER = new Logger('PackageUtil');
-
   /**
    * Add package dependencies
    *
@@ -57,9 +55,7 @@ export class PackageUtil {
       if (cwdPath) {
         envVars = { cwd: cwdPath };
       }
-      PackageUtil.LOGGER.info(`Running command: ${command}`);
       await cmd('npm', args, envVars);
-      PackageUtil.LOGGER.info(`Ran command: ${command}`);
     }
   }
 
@@ -77,9 +73,7 @@ export class PackageUtil {
     if (cwdPath) {
       envVars = { cwd: cwdPath };
     }
-    PackageUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('npm', args, envVars);
-    PackageUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   static async runPackageScript(name: string, cwdPath?: string) {
@@ -89,9 +83,7 @@ export class PackageUtil {
     if (cwdPath) {
       envVars = { cwd: cwdPath };
     }
-    PackageUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('npm', args, envVars);
-    PackageUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   /**
@@ -105,9 +97,7 @@ export class PackageUtil {
     if (cwd) {
       envVars = { cwd: cwd };
     }
-    PackageUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('npm', args, envVars);
-    PackageUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   /**
@@ -342,7 +332,7 @@ export class PackageUtil {
    * @param localPackageMap `LocalPackageMap` of the workspace
    * @param logger optionally provide a logger to capture this method's logging
    */
-  static async symlinkDependencies(localPackage: LocalPackage, localPackageMap: LocalPackageMap, logger?: Logger) {
+  static async symlinkDependencies(localPackage: LocalPackage, localPackageMap: LocalPackageMap) {
     const packageDir = path.dirname(localPackage.filePath);
     const nodeModulesPath = path.resolve(packageDir, 'node_modules');
     if (!(await Fs.exists(nodeModulesPath))) {
@@ -367,13 +357,7 @@ export class PackageUtil {
           await Fs.deleteFolder(symlinkPath);
         }
 
-        logger?.debug(
-          `[${localPackage.name}] Symlinking dependency (${dependencyPackageName}) ${symlinkPath} -> ${dependencyPath}`
-        );
         await cmd('ln', ['-s', dependencyPath, symlinkPath], { cwd: packageDir });
-        logger?.debug(
-          `[${localPackage.name}] Symlinked dependency (${dependencyPackageName}) ${symlinkPath} -> ${dependencyPath}`
-        );
       }
     };
 

@@ -1,115 +1,85 @@
-import { Logger } from '@proteinjs/util';
 import { cmd } from './cmd';
 
 export class GitUtil {
-  private static LOGGER = new Logger('GitUtil');
-
   static async cloneAppTemplatePackages(directory: string): Promise<void> {
     const args = ['clone', 'https://github.com/brentbahry/app-template.git', directory];
-    const command = 'git ' + args.join(' ');
     let envVars;
     if (directory) {
       envVars = { cwd: directory };
     }
-    GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
-    GitUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   static async init(directory: string): Promise<void> {
     const args = ['init'];
-    const command = 'git ' + args.join(' ');
     let envVars;
     if (directory) {
       envVars = { cwd: directory };
     }
-    GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
-    GitUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   static async setRemote(directory: string, remote: string): Promise<void> {
     const args = ['remote', 'set-url', 'origin', remote];
-    const command = 'git ' + args.join(' ');
     let envVars;
     if (directory) {
       envVars = { cwd: directory };
     }
-    GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
-    GitUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   static async addRemote(directory: string, remote: string): Promise<void> {
     const args = ['remote', 'add', 'origin', remote];
-    const command = 'git ' + args.join(' ');
     let envVars;
     if (directory) {
       envVars = { cwd: directory };
     }
-    GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
-    GitUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   static async commit(directory: string, message: string): Promise<void> {
     const args = ['commit', '-m', message];
-    const command = 'git ' + args.join(' ');
     let envVars;
     if (directory) {
       envVars = { cwd: directory };
     }
-    GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
-    GitUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   static async pull(directory: string): Promise<void> {
     const args = ['pull'];
-    const command = 'git ' + args.join(' ');
     let envVars;
     if (directory) {
       envVars = { cwd: directory };
     }
-    GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
-    GitUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   static async push(directory: string): Promise<void> {
     const args = ['push'];
-    const command = 'git ' + args.join(' ');
     let envVars;
     if (directory) {
       envVars = { cwd: directory };
     }
-    GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
-    GitUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   static async status(directory: string): Promise<void> {
     const args = ['status'];
-    const command = 'git ' + args.join(' ');
     let envVars;
     if (directory) {
       envVars = { cwd: directory };
     }
-    GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
-    GitUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   static async addAll(directory: string): Promise<void> {
     const args = ['add', '.'];
-    const command = 'git ' + args.join(' ');
     let envVars;
     if (directory) {
       envVars = { cwd: directory };
     }
-    GitUtil.LOGGER.info(`Running command: ${command}`);
     await cmd('git', args, envVars);
-    GitUtil.LOGGER.info(`Ran command: ${command}`);
   }
 
   static async sync(directory: string): Promise<void> {

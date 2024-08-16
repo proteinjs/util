@@ -1,5 +1,8 @@
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+/**
+ * @deprecated use `@proteinjs/logger/Logger` instead
+ */
 export class Logger {
   private name?: string;
   private logLevel: LogLevel;

@@ -1,7 +1,6 @@
 import path from 'path';
 import fsExtra from 'fs-extra';
 import fs from 'fs/promises';
-import { Logger } from '@proteinjs/util';
 import globby from 'globby';
 
 export type File = {
@@ -21,8 +20,6 @@ export interface FileDescriptor {
 }
 
 export class Fs {
-  private static LOGGER = new Logger('Fs');
-
   static async exists(path: string) {
     return await fsExtra.exists(path);
   }
@@ -54,7 +51,6 @@ export class Fs {
       throw new Error(`File is empty: ${filePath}`);
     }
 
-    Fs.LOGGER.debug(`Read file: ${filePath}`);
     return fileContent;
   }
 
@@ -62,7 +58,6 @@ export class Fs {
     for (const file of files) {
       await fsExtra.ensureFile(file.path);
       await fsExtra.writeFile(file.path, file.content);
-      Fs.LOGGER.debug(`Wrote file: ${file.path}`);
     }
   }
 
@@ -138,16 +133,13 @@ export class Fs {
   static async rename(oldPath: string, newName: string) {
     const newPath = path.join(path.dirname(oldPath), newName);
     await fsExtra.rename(oldPath, newPath);
-    Fs.LOGGER.info(`Renamed: ${oldPath} to ${newPath}`);
   }
 
   static async copy(sourcePath: string, destinationPath: string) {
     await fsExtra.copy(sourcePath, destinationPath);
-    Fs.LOGGER.info(`Copied: ${sourcePath} to ${destinationPath}`);
   }
 
   static async move(sourcePath: string, destinationPath: string) {
     await fsExtra.move(sourcePath, destinationPath);
-    Fs.LOGGER.info(`Moved: ${sourcePath} to ${destinationPath}`);
   }
 }
