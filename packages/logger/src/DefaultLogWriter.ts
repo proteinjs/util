@@ -17,7 +17,7 @@ export type Log = {
   /** The object being logged */
   obj?: any;
   /** The error being logged */
-  error?: Error;
+  error?: any;
   /** Object formatting options */
   inspectOptions?: InspectOptions;
 };

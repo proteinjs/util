@@ -5,7 +5,7 @@ import { DevLogWriter } from './DevLogWriter';
 
 type LoggerParams = { name?: string; logLevel?: LogLevel; logWriter?: DefaultLogWriter };
 type Log = { message?: string; obj?: any; inspectOptions?: InspectOptions };
-type ErrorLog = Log & { error?: Error };
+type ErrorLog = Log & { error?: any };
 
 export class Logger {
   private name?: string;
