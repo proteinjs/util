@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.0.6](https://github.com/proteinjs/util/compare/@proteinjs/logger@1.0.5...@proteinjs/logger@1.0.6) (2024-08-28)
+
+
+### Bug Fixes
+
+* `Log.error?` is now of type any, since that's a common error type and we shouldn't force errors to be of type `Error` to be logged ([eed6f56](https://github.com/proteinjs/util/commit/eed6f566f530f1dd707edcd086793bfa54d353db))
+
+
+
+
+
 ## [1.0.4](https://github.com/proteinjs/util/compare/@proteinjs/logger@1.0.3...@proteinjs/logger@1.0.4) (2024-08-13)
 
 
