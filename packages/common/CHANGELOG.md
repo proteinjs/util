@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.5.0](https://github.com/proteinjs/util/compare/@proteinjs/util@1.4.1...@proteinjs/util@1.5.0) (2025-04-11)
+
+
+### Features
+
+* Added optional `getDebounceKey` param to `Debouncer` ([19c17ba](https://github.com/proteinjs/util/commit/19c17ba68a18fe1c897b23b50ddb1663be001f22))
+
+
+
+
+
 ## [1.4.1](https://github.com/proteinjs/util/compare/@proteinjs/util@1.4.0...@proteinjs/util@1.4.1) (2024-08-16)
 
 
