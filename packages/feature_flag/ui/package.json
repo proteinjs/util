@@ -1,0 +1,47 @@
+{
+  "name": "@proteinjs/feature-flag-ui",
+  "version": "1.0.0",
+  "description": "Feature flag ui components",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/proteinjs/util.git"
+  },
+  "bugs": {
+    "url": "https://github.com/proteinjs/util/issues"
+  },
+  "homepage": "https://github.com/proteinjs/util#readme",
+  "author": "Brent Bahry",
+  "license": "MIT",
+  "scripts": {
+    "clean": "rm -rf dist/ node_modules/",
+    "build": "tsc",
+    "watch": "tsc -w -p ."
+  },
+  "dependencies": {
+    "@mui/icons-material": "5.14.11",
+    "@mui/material": "5.14.11",
+    "@proteinjs/feature-flag-common": "^1.1.0",
+    "@proteinjs/util": "1.5.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "socket.io-client": "4.7.5"
+  },
+  "devDependencies": {
+    "@types/jest": "29.5.5",
+    "@types/react": "18.2.23",
+    "@types/react-dom": "18.2.8",
+    "@typescript-eslint/eslint-plugin": "7.8.0",
+    "@typescript-eslint/parser": "7.8.0",
+    "eslint": "8.57.0",
+    "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-prettier": "5.1.3",
+    "jest": "29.7.0",
+    "ts-jest": "29.1.1",
+    "typescript": "5.2.2"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts"
+}
