@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.5.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.4.2...@proteinjs/util-node@1.5.0) (2025-10-14)
+
+
+### Features
+
+* `cmd` return `CmdResult` to be able to programmatically access log output and exit code. ([7dad1a1](https://github.com/proteinjs/util/commit/7dad1a158d692dab502d112b4beb0e3662a1cc70))
+* Added `Fs.grep` ([0c6b07f](https://github.com/proteinjs/util/commit/0c6b07f549122de8cc6e33ddd2480cdf38f531a3))
+* Added various git commands ([5adbfd7](https://github.com/proteinjs/util/commit/5adbfd7a05a10af3fde0949dd5c8eed02a9da571))
+
+
+
+
+
 ## [1.4.2](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.4.1...@proteinjs/util-node@1.4.2) (2025-04-11)
 
 **Note:** Version bump only for package @proteinjs/util-node
