@@ -1,6 +1,6 @@
 {
   "name": "@proteinjs/feature-flag-ui",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Feature flag ui components",
   "publishConfig": {
     "access": "public"
@@ -23,7 +23,7 @@
   "dependencies": {
     "@mui/icons-material": "5.14.11",
     "@mui/material": "5.14.11",
-    "@proteinjs/feature-flag-common": "^1.1.0",
+    "@proteinjs/feature-flag-common": "^1.1.1",
     "@proteinjs/util": "1.5.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
