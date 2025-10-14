@@ -2,6 +2,7 @@ import path from 'path';
 import fsExtra from 'fs-extra';
 import fs from 'fs/promises';
 import globby from 'globby';
+import { cmd } from './cmd';
 
 export type File = {
   path: string;
@@ -18,6 +19,12 @@ export interface FileDescriptor {
   path: string;
   projectRelativePath: string;
 }
+
+export type GrepMatch = {
+  path: string;
+  line: number;
+  excerpt: string;
+};
 
 export class Fs {
   static async exists(path: string) {
@@ -141,5 +148,73 @@ export class Fs {
 
   static async move(sourcePath: string, destinationPath: string) {
     await fsExtra.move(sourcePath, destinationPath);
+  }
+
+  /**
+   * Minimal, robust grep wrapper.
+   * - Literal search (-F) to avoid regex surprises like "parentheses not balanced"
+   * - Recursive (-R), show file and line (-nH), no color, ignore binary (-I)
+   * - Excludes heavy dirs: node_modules, dist, .git, generated, protein
+   * - Optional maxColumns (default 500) truncates each output line via `cut -c1-N`
+   * - Returns { code, stdout, stderr } without throwing on non-zero exit codes.
+   */
+  static async grep(params: {
+    pattern: string;
+    dir?: string; // search root; defaults to process.cwd()
+    maxResults?: number; // passed as -m <N>
+    maxColumns?: number; // truncates each output line via cut -c1-N (default 500). Set <=0 to disable.
+  }): Promise<{ code: number; stdout: string; stderr: string }> {
+    const { pattern, dir, maxResults, maxColumns } = params || {};
+    if (!pattern || typeof pattern !== 'string') {
+      throw new Error('Fs.grep: "pattern" (string) is required.');
+    }
+    const cwd = dir || process.cwd();
+
+    const args: string[] = [
+      '-R', // recurse
+      '-n', // line numbers
+      '-H', // show filename
+      '-I', // ignore binary files
+      '--color=never',
+      '-F', // literal match (no regex surprises)
+      '--exclude-dir=node_modules',
+      '--exclude-dir=dist',
+      '--exclude-dir=.git',
+      '--exclude-dir=generated',
+      '--exclude-dir=protein',
+      '--exclude=CHANGELOG.md',
+    ];
+
+    if (typeof maxResults === 'number' && maxResults > 0) {
+      args.push('-m', String(maxResults));
+    }
+
+    // Use -e to ensure the pattern is treated as a single argument
+    args.push('-e', pattern, '.');
+
+    // Helper to shell-escape args when we build a pipeline string
+    const shEscape = (s: string) => `'${String(s).replace(/'/g, `'\\''`)}'`;
+
+    const cols = typeof maxColumns === 'number' ? maxColumns : 500;
+
+    try {
+      if (cols > 0) {
+        // Truncate with cut; preserve grep's exit code using pipefail
+        const grepCmd = ['grep', ...args].map(shEscape).join(' ');
+        const pipeline = `set -o pipefail; ${grepCmd} | cut -c1-${cols}`;
+        const res = await cmd('bash', ['-lc', pipeline], { cwd });
+        return res; // { code: 0, stdout, stderr: '' } on success
+      } else {
+        // No truncation requested
+        const res = await cmd('grep', args, { cwd });
+        return res;
+      }
+    } catch (e: any) {
+      // Translate rejection into a structured result (no throw)
+      const code = typeof e?.code === 'number' ? e.code : -1;
+      const stdout = typeof e?.stdout === 'string' ? e.stdout : '';
+      const stderr = typeof e?.stderr === 'string' ? e.stderr : String(e);
+      return { code, stdout, stderr };
+    }
   }
 }
