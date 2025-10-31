@@ -50,12 +50,11 @@ export class PackageUtil {
         `${resolvedDevelopment ? `-D` : resolvedExactVersion ? '--save-exact' : `-S`}`,
         `${name}${version ? `@${version}` : ''}`,
       ];
-      const command = 'npm ' + args.join(' ');
       let envVars;
       if (cwdPath) {
         envVars = { cwd: cwdPath };
       }
-      await cmd('npm', args, envVars);
+      return await cmd('npm', args, envVars);
     }
   }
 
@@ -68,22 +67,20 @@ export class PackageUtil {
   static async uninstallPackages(packageNames: string[], cwdPath?: string) {
     const packageNamesStr = packageNames.join(' ');
     const args = ['uninstall', packageNamesStr];
-    const command = 'npm ' + args.join(' ');
     let envVars;
     if (cwdPath) {
       envVars = { cwd: cwdPath };
     }
-    await cmd('npm', args, envVars);
+    return await cmd('npm', args, envVars);
   }
 
   static async runPackageScript(name: string, cwdPath?: string) {
     const args = ['run', name];
-    const command = 'npm ' + args.join(' ');
     let envVars;
     if (cwdPath) {
       envVars = { cwd: cwdPath };
     }
-    await cmd('npm', args, envVars);
+    return await cmd('npm', args, envVars);
   }
 
   /**
@@ -92,12 +89,11 @@ export class PackageUtil {
    */
   static async npmInstall(cwd: string) {
     const args = ['i'];
-    const command = 'npm ' + args.join(' ');
     let envVars;
     if (cwd) {
       envVars = { cwd: cwd };
     }
-    await cmd('npm', args, envVars);
+    return await cmd('npm', args, envVars);
   }
 
   /**
