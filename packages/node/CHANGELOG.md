@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.6.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.5.0...@proteinjs/util-node@1.6.0) (2025-10-31)
+
+
+### Features
+
+* `PackageUtil` return `CmdResult` where appropriate. ([7a93433](https://github.com/proteinjs/util/commit/7a93433e5bf0e55e7fd850fcaa18ff86f06b7483))
+
+
+
+
+
 # [1.5.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.4.2...@proteinjs/util-node@1.5.0) (2025-10-14)
 
 
