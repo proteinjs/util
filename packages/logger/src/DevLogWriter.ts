@@ -24,7 +24,7 @@ export class DevLogWriter {
       colors: true,
       compact: false,
       breakLength: 80,
-      maxStringLength: 1000,
+      maxStringLength: 2000,
     };
 
     const formatObj = (o: any) => inspect(o, { ...defaultInspectOptions, ...inspectOptions });
