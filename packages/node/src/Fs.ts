@@ -183,6 +183,7 @@ export class Fs {
       '--exclude-dir=generated',
       '--exclude-dir=protein',
       '--exclude=CHANGELOG.md',
+      '--exclude=package-lock.json',
     ];
 
     if (typeof maxResults === 'number' && maxResults > 0) {
@@ -197,24 +198,16 @@ export class Fs {
 
     const cols = typeof maxColumns === 'number' ? maxColumns : 500;
 
-    try {
-      if (cols > 0) {
-        // Truncate with cut; preserve grep's exit code using pipefail
-        const grepCmd = ['grep', ...args].map(shEscape).join(' ');
-        const pipeline = `set -o pipefail; ${grepCmd} | cut -c1-${cols}`;
-        const res = await cmd('bash', ['-lc', pipeline], { cwd });
-        return res; // { code: 0, stdout, stderr: '' } on success
-      } else {
-        // No truncation requested
-        const res = await cmd('grep', args, { cwd });
-        return res;
-      }
-    } catch (e: any) {
-      // Translate rejection into a structured result (no throw)
-      const code = typeof e?.code === 'number' ? e.code : -1;
-      const stdout = typeof e?.stdout === 'string' ? e.stdout : '';
-      const stderr = typeof e?.stderr === 'string' ? e.stderr : String(e);
-      return { code, stdout, stderr };
+    if (cols > 0) {
+      // Truncate with cut; preserve grep's exit code using pipefail
+      const grepCmd = ['grep', ...args].map(shEscape).join(' ');
+      const pipeline = `set -o pipefail; ${grepCmd} | cut -c1-${cols}`;
+      const res = await cmd('bash', ['-lc', pipeline], { cwd });
+      return res; // { code: 0, stdout, stderr: '' } on success
+    } else {
+      // No truncation requested
+      const res = await cmd('grep', args, { cwd });
+      return res;
     }
   }
 }
