@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.6.1](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.6.0...@proteinjs/util-node@1.6.1) (2025-12-10)
+
+
+### Bug Fixes
+
+* `Fs.grep` exclude `package-lock.json`s by default. ([33b4c13](https://github.com/proteinjs/util/commit/33b4c13b59058d41fc8ed907648771535c50cb8c))
+
+
+
+
+
 # [1.6.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.5.0...@proteinjs/util-node@1.6.0) (2025-10-31)
 
 
