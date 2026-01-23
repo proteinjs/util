@@ -68,6 +68,22 @@ export class Fs {
     }
   }
 
+  static async deleteFiles(paths: string[]) {
+    for (const p of paths) {
+      const fp = `${p}`;
+      if (!(await fsExtra.exists(fp))) {
+        throw new Error(`File does not exist at path: ${fp}`);
+      }
+
+      const stat = await fsExtra.lstat(fp);
+      if (stat.isDirectory()) {
+        throw new Error(`Path is a directory, not a file: ${fp}`);
+      }
+
+      await fs.unlink(fp);
+    }
+  }
+
   /** Produces a join only if the relative path does not escape the base path */
   static baseContainedJoin(basePath: string, relativePath: string) {
     if (relativePath.includes('..')) {
