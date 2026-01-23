@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.7.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.6.1...@proteinjs/util-node@1.7.0) (2026-01-23)
+
+
+### Features
+
+* `Fs` added `deleteFiles`. ([cbed0a1](https://github.com/proteinjs/util/commit/cbed0a1e3c9486efd7ad00555f8a944d397253c6))
+
+
+
+
+
 ## [1.6.1](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.6.0...@proteinjs/util-node@1.6.1) (2025-12-10)
 
 
