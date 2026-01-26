@@ -218,11 +218,31 @@ export class Fs {
       // Truncate with cut; preserve grep's exit code using pipefail
       const grepCmd = ['grep', ...args].map(shEscape).join(' ');
       const pipeline = `set -o pipefail; ${grepCmd} | cut -c1-${cols}`;
-      const res = await cmd('bash', ['-lc', pipeline], { cwd });
+      const res = await cmd(
+        'bash',
+        ['-lc', pipeline],
+        { cwd },
+        {
+          omitLogs: {
+            stdout: { omit: true },
+            stderr: { omit: true },
+          },
+        }
+      );
       return res; // { code: 0, stdout, stderr: '' } on success
     } else {
       // No truncation requested
-      const res = await cmd('grep', args, { cwd });
+      const res = await cmd(
+        'grep',
+        args,
+        { cwd },
+        {
+          omitLogs: {
+            stdout: { omit: true },
+            stderr: { omit: true },
+          },
+        }
+      );
       return res;
     }
   }
