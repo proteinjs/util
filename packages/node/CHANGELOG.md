@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.7.1](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.7.0...@proteinjs/util-node@1.7.1) (2026-01-26)
+
+
+### Bug Fixes
+
+* `Fs.grep` configure `cmd` call to no longer write to stderr and stdout (still returns their content). ([0a7d7e6](https://github.com/proteinjs/util/commit/0a7d7e6a5704ab1939061c41263e535cbd2254d8))
+
+
+
+
+
 # [1.7.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.6.1...@proteinjs/util-node@1.7.0) (2026-01-23)
 
 
