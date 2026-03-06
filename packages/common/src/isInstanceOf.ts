@@ -1,11 +1,10 @@
 type ClassConstructor<T> = new (...args: any[]) => T;
 
-export function isInstanceOf<T>(obj: any, cls: ClassConstructor<T>): boolean {
+export function isInstanceOf<T>(obj: unknown, cls: ClassConstructor<T>): obj is T {
   if (!obj) {
     return false;
   }
 
-  // Traverse the prototype chain to support inheritance
   let currentProto = Object.getPrototypeOf(obj);
   while (currentProto) {
     if (currentProto.constructor.name === cls.name) {
