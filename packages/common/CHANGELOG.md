@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.6.0](https://github.com/proteinjs/util/compare/@proteinjs/util@1.5.0...@proteinjs/util@1.6.0) (2026-03-06)
+
+
+### Features
+
+* `isInstanceOf` is now a type guard. ([49c491b](https://github.com/proteinjs/util/commit/49c491b297ce021e7e853ec21d3d8738d555aef7))
+
+
+
+
+
 # [1.5.0](https://github.com/proteinjs/util/compare/@proteinjs/util@1.4.1...@proteinjs/util@1.5.0) (2025-04-11)
 
 
