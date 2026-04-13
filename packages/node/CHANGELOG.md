@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.8.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.7.3...@proteinjs/util-node@1.8.0) (2026-04-13)
+
+
+### Features
+
+* chmod +x bin files after symlinking local dependencies ([10040cf](https://github.com/proteinjs/util/commit/10040cf8393b9369a997fbaccc1c337ee1871a37))
+
+
+
+
+
 ## [1.7.3](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.7.2...@proteinjs/util-node@1.7.3) (2026-04-13)
 
 
