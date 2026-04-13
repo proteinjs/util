@@ -1,5 +1,6 @@
 import ts from 'typescript';
 import * as path from 'path';
+import * as fs from 'fs/promises';
 import { Graph, GraphAlgorithms } from '@proteinjs/util';
 import { cmd } from './cmd';
 import { Fs } from './Fs';
@@ -358,6 +359,24 @@ export class PackageUtil {
         }
 
         await cmd('ln', ['-s', dependencyPath, symlinkPath], { cwd: packageDir });
+
+        // After symlinking, ensure bin files are executable.
+        // tsc output doesn't preserve the execute bit that npm install sets from the published tarball.
+        const depPackageJson = JSON.parse(await Fs.readFile(localPackageMap[dependencyPackageName].filePath));
+        const bin = depPackageJson.bin;
+        if (bin && typeof bin === 'object') {
+          for (const binName in bin) {
+            const binFilePath = path.resolve(dependencyPath, bin[binName]);
+            if (await Fs.exists(binFilePath)) {
+              await fs.chmod(binFilePath, 0o755);
+            }
+          }
+        } else if (bin && typeof bin === 'string') {
+          const binFilePath = path.resolve(dependencyPath, bin);
+          if (await Fs.exists(binFilePath)) {
+            await fs.chmod(binFilePath, 0o755);
+          }
+        }
       }
     };
 
