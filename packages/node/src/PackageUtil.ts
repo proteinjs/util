@@ -349,6 +349,10 @@ export class PackageUtil {
         }
 
         const symlinkPath = path.join(nodeModulesPath, dependencyPackageName);
+        const symlinkParent = path.dirname(symlinkPath);
+        if (!(await Fs.exists(symlinkParent))) {
+          await Fs.createFolder(symlinkParent);
+        }
         if (await Fs.exists(symlinkPath)) {
           await Fs.deleteFolder(symlinkPath);
         }
