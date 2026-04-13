@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.7.3](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.7.2...@proteinjs/util-node@1.7.3) (2026-04-13)
+
+
+### Bug Fixes
+
+* create scoped package parent directories before symlinking ([8096064](https://github.com/proteinjs/util/commit/8096064c6c32f7477c1b13df79dd52283a973a91))
+
+
+
+
+
 ## [1.7.2](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.7.1...@proteinjs/util-node@1.7.2) (2026-03-06)
 
 **Note:** Version bump only for package @proteinjs/util-node
