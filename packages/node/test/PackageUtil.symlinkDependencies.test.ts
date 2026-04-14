@@ -240,9 +240,7 @@ describe('PackageUtil.symlinkDependencies — relative link targets', () => {
 
     await PackageUtil.symlinkDependencies(consumerPkg, packageMap);
 
-    const scopedLink = await fs.readlink(
-      path.join(workspaceRoot, 'packages/consumer/node_modules/@scope/foo')
-    );
+    const scopedLink = await fs.readlink(path.join(workspaceRoot, 'packages/consumer/node_modules/@scope/foo'));
     const unscopedLink = await fs.readlink(path.join(workspaceRoot, 'packages/consumer/node_modules/bar'));
 
     expect(path.isAbsolute(scopedLink)).toBe(false);
