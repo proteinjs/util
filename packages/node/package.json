@@ -20,7 +20,8 @@
   "scripts": {
     "clean": "rm -rf dist/ node_modules/",
     "build": "tsc",
-    "watch": "tsc -w -p ."
+    "watch": "tsc -w -p .",
+    "test": "jest --passWithNoTests"
   },
   "dependencies": {
     "@dagrejs/graphlib": "2.1.4",

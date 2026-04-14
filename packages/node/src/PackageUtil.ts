@@ -354,27 +354,94 @@ export class PackageUtil {
         if (!(await Fs.exists(symlinkParent))) {
           await Fs.createFolder(symlinkParent);
         }
-        if (await Fs.exists(symlinkPath)) {
+        // Clear out any existing entry at symlinkPath before creating the
+        // new symlink. Use `fs.lstat` rather than `Fs.exists` because
+        // `Fs.exists` is `fs.stat`-backed — which FOLLOWS symlinks and
+        // throws on a broken target, making broken symlinks invisible
+        // here. That's a real failure mode: if a prior run produced a
+        // symlink to a path that no longer exists (e.g. after the tree
+        // was moved, mounted elsewhere, or retargeted by tooling), the
+        // broken link survives the `Fs.exists` check, the delete is
+        // skipped, and `ln -s` then fails with "File exists".
+        try {
+          await fs.lstat(symlinkPath);
+          // Existing entry (symlink, file, or directory) — remove it.
+          // `deleteFolder` (fs-extra `remove`) handles all three.
           await Fs.deleteFolder(symlinkPath);
+        } catch (e: any) {
+          if (e.code !== 'ENOENT') {
+            throw e;
+          }
+          // Nothing there — nothing to clean up.
         }
 
-        await cmd('ln', ['-s', dependencyPath, symlinkPath], { cwd: packageDir });
+        // Use a RELATIVE link target so the workspace is portable across
+        // mount points (a developer's laptop, CI containers, a remote
+        // sandbox, etc.) without having to re-run `symlink-workspace` just
+        // because the absolute root path changed. `ln -s TARGET LINK`
+        // resolves TARGET relative to the directory containing the link —
+        // i.e. `symlinkParent` — so we compute the relative path from there.
+        const relativeDependencyPath = path.relative(symlinkParent, dependencyPath);
+        await cmd('ln', ['-s', relativeDependencyPath, symlinkPath], { cwd: packageDir });
 
-        // After symlinking, ensure bin files are executable.
-        // tsc output doesn't preserve the execute bit that npm install sets from the published tarball.
+        // Create `.bin/<name>` shims for every bin the dependency declares.
+        //
+        // This is normally npm's job: `npm install` creates shims at
+        // `node_modules/.bin/<name>` pointing into the installed package so
+        // lifecycle scripts like `npm run watch` (where npm prepends
+        // `./node_modules/.bin` to PATH) can find them. `symlink-workspace`
+        // bypasses `npm install`, so without this loop the shims only exist
+        // if the user happened to run `npm install` at some point and they
+        // survive. They don't survive a broken-symlink sweep, a fresh
+        // checkout, or a move to a new host — so we create them ourselves.
+        //
+        // Also chmod +x the bin target: tsc output doesn't preserve the
+        // execute bit that `npm install` sets from the published tarball.
         const depPackageJson = JSON.parse(await Fs.readFile(localPackageMap[dependencyPackageName].filePath));
         const bin = depPackageJson.bin;
+        const binEntries: Array<{ name: string; relPath: string }> = [];
         if (bin && typeof bin === 'object') {
           for (const binName in bin) {
-            const binFilePath = path.resolve(dependencyPath, bin[binName]);
+            binEntries.push({ name: binName, relPath: bin[binName] });
+          }
+        } else if (bin && typeof bin === 'string') {
+          // Shorthand: `"bin": "./path"` — the exposed name is the
+          // package's bare name (scope stripped). Matches npm behavior.
+          const bareName = dependencyPackageName.includes('/')
+            ? dependencyPackageName.split('/').pop()!
+            : dependencyPackageName;
+          binEntries.push({ name: bareName, relPath: bin });
+        }
+
+        if (binEntries.length > 0) {
+          const dotBinDir = path.join(nodeModulesPath, '.bin');
+          if (!(await Fs.exists(dotBinDir))) {
+            await Fs.createFolder(dotBinDir);
+          }
+          for (const { name, relPath } of binEntries) {
+            const binFilePath = path.resolve(dependencyPath, relPath);
             if (await Fs.exists(binFilePath)) {
               await fs.chmod(binFilePath, 0o755);
             }
-          }
-        } else if (bin && typeof bin === 'string') {
-          const binFilePath = path.resolve(dependencyPath, bin);
-          if (await Fs.exists(binFilePath)) {
-            await fs.chmod(binFilePath, 0o755);
+            const shimPath = path.join(dotBinDir, name);
+            // Same lstat-based cleanup as for the dep symlink — broken
+            // shims from a prior run in a different environment would
+            // otherwise make `ln -s` fail with "File exists".
+            try {
+              await fs.lstat(shimPath);
+              await Fs.deleteFolder(shimPath);
+            } catch (e: any) {
+              if (e.code !== 'ENOENT') {
+                throw e;
+              }
+            }
+            // Relative target: from `node_modules/.bin` into the dep
+            // directory. Goes through the dep's symlinked node_modules
+            // entry (not into the source tree) so the shim continues to
+            // resolve correctly after the workspace is relocated.
+            const shimTargetAbsolute = path.join(nodeModulesPath, dependencyPackageName, relPath);
+            const shimRelative = path.relative(dotBinDir, shimTargetAbsolute);
+            await cmd('ln', ['-s', shimRelative, shimPath], { cwd: packageDir });
           }
         }
       }
