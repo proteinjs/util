@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.8.1](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.8.0...@proteinjs/util-node@1.8.1) (2026-04-14)
+
+
+### Bug Fixes
+
+* make symlink-workspace portable and self-sufficient ([fa34e5f](https://github.com/proteinjs/util/commit/fa34e5f4f7d4fa6785cda8a4747964904020202d))
+
+
+
+
+
 # [1.8.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.7.3...@proteinjs/util-node@1.8.0) (2026-04-13)
 
 
