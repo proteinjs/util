@@ -225,6 +225,82 @@ describe('PackageUtil.symlinkDependencies — relative link targets', () => {
     expect(content).toContain('console.log("only")');
   });
 
+  test('symlinks a TRANSITIVE workspace dependency the consumer reaches only through another dep', async () => {
+    // Regression test for the missing-transitive-link bug.
+    //
+    // A package.json only lists DIRECT deps. But Node resolves a
+    // transitive workspace dep (one pulled in THROUGH a direct dep) out of
+    // the consumer's own node_modules first — so if symlinkDependencies
+    // only linked direct deps, npm would satisfy the transitive one with a
+    // stale registry copy that lags the live workspace source, causing
+    // version/schema drift (this exact gap cost a content_reference
+    // last_activity_at schema mismatch between flow-server's transitive
+    // space-common and the live source).
+    //
+    // Topology: consumer -> mid -> leaf. consumer declares ONLY mid; its
+    // single path to leaf is transitive. leaf must still get symlinked into
+    // consumer's node_modules with a relative target.
+    const leafPkg = await writePackage('packages/leaf', '@scope/leaf');
+    const midPkg = await writePackage('packages/mid', '@scope/mid', {
+      '@scope/leaf': '^1.0.0',
+    });
+    const consumerPkg = await writePackage('packages/consumer', '@scope/consumer', {
+      '@scope/mid': '^1.0.0',
+    });
+    const packageMap: LocalPackageMap = {
+      '@scope/leaf': leafPkg,
+      '@scope/mid': midPkg,
+      '@scope/consumer': consumerPkg,
+    };
+
+    await PackageUtil.symlinkDependencies(consumerPkg, packageMap);
+
+    // Direct dep is linked (baseline).
+    const midLink = await fs.readlink(path.join(workspaceRoot, 'packages/consumer/node_modules/@scope/mid'));
+    expect(path.isAbsolute(midLink)).toBe(false);
+    expect(midLink).toBe(path.join('..', '..', '..', 'mid'));
+
+    // Transitive dep — the whole point of this test — is ALSO linked, with
+    // a relative target, and resolves to the live leaf source.
+    const leafSymlinkPath = path.join(workspaceRoot, 'packages/consumer/node_modules/@scope/leaf');
+    expect((await fs.lstat(leafSymlinkPath)).isSymbolicLink()).toBe(true);
+    const leafLink = await fs.readlink(leafSymlinkPath);
+    expect(path.isAbsolute(leafLink)).toBe(false);
+    expect(leafLink).toBe(path.join('..', '..', '..', 'leaf'));
+    const resolvedLeaf = await fs.stat(leafSymlinkPath);
+    expect(resolvedLeaf.isDirectory()).toBe(true);
+  });
+
+  test('is cycle-safe: links the full closure even when the dependency graph has a cycle', async () => {
+    // The dependency graph can contain cycles (a <-> b). The transitive
+    // closure traversal must terminate and still link every reachable
+    // workspace package.
+    //
+    // Topology: consumer -> a, a -> b, b -> a (cycle). consumer declares
+    // only a; both a and b must be linked.
+    const aPkg = await writePackage('packages/a', '@scope/a', {
+      '@scope/b': '^1.0.0',
+    });
+    const bPkg = await writePackage('packages/b', '@scope/b', {
+      '@scope/a': '^1.0.0',
+    });
+    const consumerPkg = await writePackage('packages/consumer', '@scope/consumer', {
+      '@scope/a': '^1.0.0',
+    });
+    const packageMap: LocalPackageMap = {
+      '@scope/a': aPkg,
+      '@scope/b': bPkg,
+      '@scope/consumer': consumerPkg,
+    };
+
+    await PackageUtil.symlinkDependencies(consumerPkg, packageMap);
+
+    const aLink = await fs.readlink(path.join(workspaceRoot, 'packages/consumer/node_modules/@scope/a'));
+    const bLink = await fs.readlink(path.join(workspaceRoot, 'packages/consumer/node_modules/@scope/b'));
+    expect(aLink).toBe(path.join('..', '..', '..', 'a'));
+    expect(bLink).toBe(path.join('..', '..', '..', 'b'));
+  });
+
   test('handles scoped and unscoped dependencies uniformly', async () => {
     const scopedDep = await writePackage('packages/scoped', '@scope/foo');
     const unscopedDep = await writePackage('packages/unscoped', 'bar');

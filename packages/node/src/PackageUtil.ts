@@ -325,9 +325,20 @@ export class PackageUtil {
 
   /**
    * Symlink the dependencies of `localPackage` to other local packages in the workspace.
+   *
+   * This links the package's full TRANSITIVE closure of workspace dependencies,
+   * not just its directly-declared ones. A package's `package.json` only lists
+   * its direct deps, but those deps pull in workspace packages of their own
+   * (e.g. `flow-server` declares `@n3xah/space-server`, which itself depends on
+   * `@n3xah/space-common`). Node resolves a transitive dep like `space-common`
+   * out of the consumer's own `node_modules` first, so if we only symlinked
+   * direct deps, npm would satisfy `space-common` with a stale registry copy
+   * that lags the live workspace source — causing schema/version drift. By
+   * linking the whole closure, every workspace package a package can reach at
+   * runtime resolves to the live source tree.
+   *
    * @param localPackage package to symlink the dependencies of
    * @param localPackageMap `LocalPackageMap` of the workspace
-   * @param logger optionally provide a logger to capture this method's logging
    */
   static async symlinkDependencies(localPackage: LocalPackage, localPackageMap: LocalPackageMap) {
     const packageDir = path.dirname(localPackage.filePath);
@@ -336,118 +347,181 @@ export class PackageUtil {
       await Fs.createFolder(nodeModulesPath);
     }
 
-    const linkDependencies = async (dependencies: Record<string, string> | undefined) => {
-      if (!dependencies) {
-        return;
-      }
+    const transitiveWorkspaceDependencies = await PackageUtil.getTransitiveWorkspaceDependencies(
+      localPackage,
+      localPackageMap
+    );
+    for (const dependencyPackageName of transitiveWorkspaceDependencies) {
+      await PackageUtil.symlinkPackage(dependencyPackageName, nodeModulesPath, packageDir, localPackageMap);
+    }
+  }
 
-      for (const dependencyPackageName in dependencies) {
-        const dependencyPath = localPackageMap[dependencyPackageName]?.filePath
-          ? path.dirname(localPackageMap[dependencyPackageName].filePath)
-          : null;
-        if (!dependencyPath) {
+  /**
+   * Compute the transitive closure of workspace dependencies for `localPackage`.
+   *
+   * Reuses `getPackageDependencyGraph`, which already crawls `dependencies` and
+   * `devDependencies` (transitively, across the whole workspace) and adds an
+   * edge `consumer -> dependency` for each. So the workspace deps reachable from
+   * a package are exactly the nodes reachable by following `successors` from its
+   * node. We do a cycle-safe traversal (a `visited` set), since the dependency
+   * graph can contain cycles. The package itself is excluded from the result.
+   *
+   * Only names present in `localPackageMap` are returned — i.e. packages that
+   * actually live in the workspace and can be symlinked (the graph already
+   * filters to file:/relative/workspace deps in `addDependencies`, but we filter
+   * again here so the result is exactly the set of linkable packages).
+   *
+   * @returns workspace package names this package transitively depends on
+   */
+  private static async getTransitiveWorkspaceDependencies(
+    localPackage: LocalPackage,
+    localPackageMap: LocalPackageMap
+  ): Promise<string[]> {
+    const graph = await PackageUtil.getPackageDependencyGraph(localPackageMap);
+    const rootPackageName = localPackage.packageJson['name'];
+
+    const transitiveDependencies = new Set<string>();
+    const visited = new Set<string>([rootPackageName]);
+    const stack: string[] = [rootPackageName];
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      const successors = (graph.successors(current) as string[] | void) || [];
+      for (const dependencyPackageName of successors) {
+        if (visited.has(dependencyPackageName)) {
           continue;
         }
 
-        const symlinkPath = path.join(nodeModulesPath, dependencyPackageName);
-        const symlinkParent = path.dirname(symlinkPath);
-        if (!(await Fs.exists(symlinkParent))) {
-          await Fs.createFolder(symlinkParent);
+        visited.add(dependencyPackageName);
+        stack.push(dependencyPackageName);
+        if (localPackageMap[dependencyPackageName]) {
+          transitiveDependencies.add(dependencyPackageName);
         }
-        // Clear out any existing entry at symlinkPath before creating the
-        // new symlink. Use `fs.lstat` rather than `Fs.exists` because
-        // `Fs.exists` is `fs.stat`-backed — which FOLLOWS symlinks and
-        // throws on a broken target, making broken symlinks invisible
-        // here. That's a real failure mode: if a prior run produced a
-        // symlink to a path that no longer exists (e.g. after the tree
-        // was moved, mounted elsewhere, or retargeted by tooling), the
-        // broken link survives the `Fs.exists` check, the delete is
-        // skipped, and `ln -s` then fails with "File exists".
+      }
+    }
+
+    return Array.from(transitiveDependencies);
+  }
+
+  /**
+   * Symlink a single workspace package into `nodeModulesPath`, and create
+   * `node_modules/.bin/<name>` shims for any `bin` it declares.
+   *
+   * This is the per-dependency linking logic used by `symlinkDependencies` for
+   * each package in the transitive closure. The caller is responsible for
+   * deciding WHICH packages to link; this method just links the one named.
+   *
+   * @param dependencyPackageName name of the workspace package to link
+   * @param nodeModulesPath absolute path to the consumer's `node_modules`
+   * @param packageDir absolute path to the consumer package's directory (cwd for `ln`)
+   * @param localPackageMap `LocalPackageMap` of the workspace
+   */
+  private static async symlinkPackage(
+    dependencyPackageName: string,
+    nodeModulesPath: string,
+    packageDir: string,
+    localPackageMap: LocalPackageMap
+  ) {
+    const dependencyPath = localPackageMap[dependencyPackageName]?.filePath
+      ? path.dirname(localPackageMap[dependencyPackageName].filePath)
+      : null;
+    if (!dependencyPath) {
+      return;
+    }
+
+    const symlinkPath = path.join(nodeModulesPath, dependencyPackageName);
+    const symlinkParent = path.dirname(symlinkPath);
+    if (!(await Fs.exists(symlinkParent))) {
+      await Fs.createFolder(symlinkParent);
+    }
+    // Clear out any existing entry at symlinkPath before creating the
+    // new symlink. Use `fs.lstat` rather than `Fs.exists` because
+    // `Fs.exists` is `fs.stat`-backed — which FOLLOWS symlinks and
+    // throws on a broken target, making broken symlinks invisible
+    // here. That's a real failure mode: if a prior run produced a
+    // symlink to a path that no longer exists (e.g. after the tree
+    // was moved, mounted elsewhere, or retargeted by tooling), the
+    // broken link survives the `Fs.exists` check, the delete is
+    // skipped, and `ln -s` then fails with "File exists".
+    try {
+      await fs.lstat(symlinkPath);
+      // Existing entry (symlink, file, or directory) — remove it.
+      // `deleteFolder` (fs-extra `remove`) handles all three.
+      await Fs.deleteFolder(symlinkPath);
+    } catch (e: any) {
+      if (e.code !== 'ENOENT') {
+        throw e;
+      }
+      // Nothing there — nothing to clean up.
+    }
+
+    // Use a RELATIVE link target so the workspace is portable across
+    // mount points (a developer's laptop, CI containers, a remote
+    // sandbox, etc.) without having to re-run `symlink-workspace` just
+    // because the absolute root path changed. `ln -s TARGET LINK`
+    // resolves TARGET relative to the directory containing the link —
+    // i.e. `symlinkParent` — so we compute the relative path from there.
+    const relativeDependencyPath = path.relative(symlinkParent, dependencyPath);
+    await cmd('ln', ['-s', relativeDependencyPath, symlinkPath], { cwd: packageDir });
+
+    // Create `.bin/<name>` shims for every bin the dependency declares.
+    //
+    // This is normally npm's job: `npm install` creates shims at
+    // `node_modules/.bin/<name>` pointing into the installed package so
+    // lifecycle scripts like `npm run watch` (where npm prepends
+    // `./node_modules/.bin` to PATH) can find them. `symlink-workspace`
+    // bypasses `npm install`, so without this loop the shims only exist
+    // if the user happened to run `npm install` at some point and they
+    // survive. They don't survive a broken-symlink sweep, a fresh
+    // checkout, or a move to a new host — so we create them ourselves.
+    //
+    // Also chmod +x the bin target: tsc output doesn't preserve the
+    // execute bit that `npm install` sets from the published tarball.
+    const depPackageJson = JSON.parse(await Fs.readFile(localPackageMap[dependencyPackageName].filePath));
+    const bin = depPackageJson.bin;
+    const binEntries: Array<{ name: string; relPath: string }> = [];
+    if (bin && typeof bin === 'object') {
+      for (const binName in bin) {
+        binEntries.push({ name: binName, relPath: bin[binName] });
+      }
+    } else if (bin && typeof bin === 'string') {
+      // Shorthand: `"bin": "./path"` — the exposed name is the
+      // package's bare name (scope stripped). Matches npm behavior.
+      const bareName = dependencyPackageName.includes('/')
+        ? dependencyPackageName.split('/').pop()!
+        : dependencyPackageName;
+      binEntries.push({ name: bareName, relPath: bin });
+    }
+
+    if (binEntries.length > 0) {
+      const dotBinDir = path.join(nodeModulesPath, '.bin');
+      if (!(await Fs.exists(dotBinDir))) {
+        await Fs.createFolder(dotBinDir);
+      }
+      for (const { name, relPath } of binEntries) {
+        const binFilePath = path.resolve(dependencyPath, relPath);
+        if (await Fs.exists(binFilePath)) {
+          await fs.chmod(binFilePath, 0o755);
+        }
+        const shimPath = path.join(dotBinDir, name);
+        // Same lstat-based cleanup as for the dep symlink — broken
+        // shims from a prior run in a different environment would
+        // otherwise make `ln -s` fail with "File exists".
         try {
-          await fs.lstat(symlinkPath);
-          // Existing entry (symlink, file, or directory) — remove it.
-          // `deleteFolder` (fs-extra `remove`) handles all three.
-          await Fs.deleteFolder(symlinkPath);
+          await fs.lstat(shimPath);
+          await Fs.deleteFolder(shimPath);
         } catch (e: any) {
           if (e.code !== 'ENOENT') {
             throw e;
           }
-          // Nothing there — nothing to clean up.
         }
-
-        // Use a RELATIVE link target so the workspace is portable across
-        // mount points (a developer's laptop, CI containers, a remote
-        // sandbox, etc.) without having to re-run `symlink-workspace` just
-        // because the absolute root path changed. `ln -s TARGET LINK`
-        // resolves TARGET relative to the directory containing the link —
-        // i.e. `symlinkParent` — so we compute the relative path from there.
-        const relativeDependencyPath = path.relative(symlinkParent, dependencyPath);
-        await cmd('ln', ['-s', relativeDependencyPath, symlinkPath], { cwd: packageDir });
-
-        // Create `.bin/<name>` shims for every bin the dependency declares.
-        //
-        // This is normally npm's job: `npm install` creates shims at
-        // `node_modules/.bin/<name>` pointing into the installed package so
-        // lifecycle scripts like `npm run watch` (where npm prepends
-        // `./node_modules/.bin` to PATH) can find them. `symlink-workspace`
-        // bypasses `npm install`, so without this loop the shims only exist
-        // if the user happened to run `npm install` at some point and they
-        // survive. They don't survive a broken-symlink sweep, a fresh
-        // checkout, or a move to a new host — so we create them ourselves.
-        //
-        // Also chmod +x the bin target: tsc output doesn't preserve the
-        // execute bit that `npm install` sets from the published tarball.
-        const depPackageJson = JSON.parse(await Fs.readFile(localPackageMap[dependencyPackageName].filePath));
-        const bin = depPackageJson.bin;
-        const binEntries: Array<{ name: string; relPath: string }> = [];
-        if (bin && typeof bin === 'object') {
-          for (const binName in bin) {
-            binEntries.push({ name: binName, relPath: bin[binName] });
-          }
-        } else if (bin && typeof bin === 'string') {
-          // Shorthand: `"bin": "./path"` — the exposed name is the
-          // package's bare name (scope stripped). Matches npm behavior.
-          const bareName = dependencyPackageName.includes('/')
-            ? dependencyPackageName.split('/').pop()!
-            : dependencyPackageName;
-          binEntries.push({ name: bareName, relPath: bin });
-        }
-
-        if (binEntries.length > 0) {
-          const dotBinDir = path.join(nodeModulesPath, '.bin');
-          if (!(await Fs.exists(dotBinDir))) {
-            await Fs.createFolder(dotBinDir);
-          }
-          for (const { name, relPath } of binEntries) {
-            const binFilePath = path.resolve(dependencyPath, relPath);
-            if (await Fs.exists(binFilePath)) {
-              await fs.chmod(binFilePath, 0o755);
-            }
-            const shimPath = path.join(dotBinDir, name);
-            // Same lstat-based cleanup as for the dep symlink — broken
-            // shims from a prior run in a different environment would
-            // otherwise make `ln -s` fail with "File exists".
-            try {
-              await fs.lstat(shimPath);
-              await Fs.deleteFolder(shimPath);
-            } catch (e: any) {
-              if (e.code !== 'ENOENT') {
-                throw e;
-              }
-            }
-            // Relative target: from `node_modules/.bin` into the dep
-            // directory. Goes through the dep's symlinked node_modules
-            // entry (not into the source tree) so the shim continues to
-            // resolve correctly after the workspace is relocated.
-            const shimTargetAbsolute = path.join(nodeModulesPath, dependencyPackageName, relPath);
-            const shimRelative = path.relative(dotBinDir, shimTargetAbsolute);
-            await cmd('ln', ['-s', shimRelative, shimPath], { cwd: packageDir });
-          }
-        }
+        // Relative target: from `node_modules/.bin` into the dep
+        // directory. Goes through the dep's symlinked node_modules
+        // entry (not into the source tree) so the shim continues to
+        // resolve correctly after the workspace is relocated.
+        const shimTargetAbsolute = path.join(nodeModulesPath, dependencyPackageName, relPath);
+        const shimRelative = path.relative(dotBinDir, shimTargetAbsolute);
+        await cmd('ln', ['-s', shimRelative, shimPath], { cwd: packageDir });
       }
-    };
-
-    await linkDependencies(localPackage.packageJson.dependencies);
-    await linkDependencies(localPackage.packageJson.devDependencies);
+    }
   }
 }
