@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.9.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.8.1...@proteinjs/util-node@1.9.0) (2026-06-24)
+
+
+### Features
+
+* symlink-workspace links each package's transitive workspace-dep closure ([55a7c25](https://github.com/proteinjs/util/commit/55a7c2541f500bec4e12bb05454acadd6b4c4b66))
+
+
+
+
+
 ## [1.8.1](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.8.0...@proteinjs/util-node@1.8.1) (2026-04-14)
 
 
