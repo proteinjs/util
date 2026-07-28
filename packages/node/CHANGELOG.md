@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.10.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.9.0...@proteinjs/util-node@1.10.0) (2026-07-28)
+
+
+### Features
+
+* expose PackageUtil.getTransitiveWorkspaceDependencies ([72fa5b8](https://github.com/proteinjs/util/commit/72fa5b8208e38e04ab06a27446e21b549d21b1c9))
+
+
+
+
+
 # [1.9.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.8.1...@proteinjs/util-node@1.9.0) (2026-06-24)
 
 
