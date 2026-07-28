@@ -371,9 +371,12 @@ export class PackageUtil {
    * filters to file:/relative/workspace deps in `addDependencies`, but we filter
    * again here so the result is exactly the set of linkable packages).
    *
+   * Public: WorkspaceDoctor (@proteinjs/build) diagnoses the same closure this method links —
+   * verification and repair must agree on the set of packages that ought to be symlinked.
+   *
    * @returns workspace package names this package transitively depends on
    */
-  private static async getTransitiveWorkspaceDependencies(
+  static async getTransitiveWorkspaceDependencies(
     localPackage: LocalPackage,
     localPackageMap: LocalPackageMap
   ): Promise<string[]> {
