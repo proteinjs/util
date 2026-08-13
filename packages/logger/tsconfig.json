@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "noEmitOnError": true,
     "rootDir": "./",
     "target": "es6",
     "module": "commonjs",
