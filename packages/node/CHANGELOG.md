@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.10.2](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.1...@proteinjs/util-node@1.10.2) (2026-08-13)
+
+**Note:** Version bump only for package @proteinjs/util-node
+
+
+
+
+
 # [1.10.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.9.0...@proteinjs/util-node@1.10.0) (2026-07-28)
 
 
