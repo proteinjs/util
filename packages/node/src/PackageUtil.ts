@@ -157,17 +157,27 @@ export class PackageUtil {
   /**
    * Get map of local packages within repo specified by directory path
    *
+   * Discovery is a bounded, deterministic filesystem walk (`findPackageJsonFiles`):
+   * - never descends into `node_modules` or `dist`
+   * - never descends into hidden (dot-prefixed) directories — `.git`, scratch
+   *   trees, editor state, and agent worktrees are not part of the workspace
+   * - never follows symlinks — a package reachable only through a symlink is
+   *   not a workspace member, and workspace tooling itself plants symlinks
+   *   that point back into the tree, so following them loops
+   *
+   * This used to be a glob with `ignore: ['**\/node_modules/**', '**\/dist/**']`,
+   * which was unbounded: micromatch's default `dot: false` makes a leading `**`
+   * refuse to cross dot-segments, so beneath any hidden directory (e.g. a
+   * multi-checkout `.scratch/` tree) the ignore patterns matched nothing while
+   * the glob walker still descended — every `node_modules` under a hidden dir
+   * was fully traversed, OOMing workspace tooling regardless of heap size.
+   *
    * @param dir dir path that contains local packages
-   * @param globIgnorePatterns already includes: ['**\/node_modules/**', '**\/dist/**']
    * @returns {[packageName: string]: LocalPackage}
    */
-  static async getLocalPackageMap(dir: string, globIgnorePatterns: string[] = []): Promise<LocalPackageMap> {
+  static async getLocalPackageMap(dir: string): Promise<LocalPackageMap> {
     const packageMap: { [packageName: string]: LocalPackage } = {};
-    const filePaths = await Fs.getFilePathsMatchingGlob(dir, '**/package.json', [
-      '**/node_modules/**',
-      '**/dist/**',
-      ...globIgnorePatterns,
-    ]);
+    const filePaths = await PackageUtil.findPackageJsonFiles(dir);
     for (const filePath of filePaths) {
       const packageJson = JSON.parse(await Fs.readFile(filePath));
       const name = packageJson['name'];
@@ -526,5 +536,38 @@ export class PackageUtil {
         await cmd('ln', ['-s', shimRelative, shimPath], { cwd: packageDir });
       }
     }
+  }
+
+  /**
+   * Recursively collect `package.json` file paths under `rootDir`.
+   *
+   * Bounded, deterministic walk — see `getLocalPackageMap` for the prune
+   * rules and why glob-based discovery was replaced. Symlinks are loop-proof
+   * for free: `withFileTypes` reports a symlink as a symlink (neither
+   * directory nor file), so symlinked entries fall through both branches
+   * below and are never followed.
+   *
+   * @returns lexicographically sorted paths, for stable downstream ordering
+   */
+  private static async findPackageJsonFiles(rootDir: string): Promise<string[]> {
+    const prunedDirNames = new Set(['node_modules', 'dist']);
+    const found: string[] = [];
+    const pending: string[] = [rootDir];
+    while (pending.length > 0) {
+      const currentDir = pending.pop()!;
+      const dirents = await fs.readdir(currentDir, { withFileTypes: true });
+      for (const dirent of dirents) {
+        if (dirent.isDirectory()) {
+          if (dirent.name.startsWith('.') || prunedDirNames.has(dirent.name)) {
+            continue;
+          }
+          pending.push(path.join(currentDir, dirent.name));
+        } else if (dirent.isFile() && dirent.name === 'package.json') {
+          found.push(path.join(currentDir, dirent.name));
+        }
+      }
+    }
+
+    return found.sort();
   }
 }
