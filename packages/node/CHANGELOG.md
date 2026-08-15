@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.10.3](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.2...@proteinjs/util-node@1.10.3) (2026-08-15)
+
+
+### Bug Fixes
+
+* bounded workspace package discovery — replace glob walk that descended unpruned into hidden directories ([04a56bb](https://github.com/proteinjs/util/commit/04a56bb228536ffa2fb63e888524c672f4cca186))
+
+
+
+
+
 ## [1.10.2](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.1...@proteinjs/util-node@1.10.2) (2026-08-13)
 
 **Note:** Version bump only for package @proteinjs/util-node
