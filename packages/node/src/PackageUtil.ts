@@ -23,12 +23,31 @@ export type LocalPackage = {
   };
 };
 
+/**
+ * Name-keyed resolution index: dependency declarations reference packages BY NAME, so name →
+ * package is how a declared dep resolves to a workspace member. Names are not identities —
+ * every workspace root in a metarepo is named `root` — so when several packages share a name,
+ * this map holds only one of them (deterministically: the lexicographically last package.json
+ * path wins). Enumeration and identity questions belong to `LocalPackagePathMap`.
+ */
 export type LocalPackageMap = {
   [packageName: string]: LocalPackage;
 };
 
+/**
+ * Path-keyed identity map: one entry per discovered package.json, keyed by its absolute path.
+ * This is the DISCOVERY truth — same-named packages (the metarepo root, the app root, and every
+ * nested lerna root are all named `root`) never collide here. Use it wherever the question is
+ * "which packages exist" (enumeration, symlink coverage); use `LocalPackageMap` only to resolve
+ * a dependency NAME to its workspace member.
+ */
+export type LocalPackagePathMap = {
+  [packageJsonPath: string]: LocalPackage;
+};
+
 export type WorkspaceMetadata = {
   packageMap: LocalPackageMap;
+  packagePathMap: LocalPackagePathMap; // every discovered package, path-keyed (collision-free)
   packageGraph: any; // @dagrejs/graphlib.Graph
   sortedPackageNames: string[]; // local package names, in dependency order (ie. if a depends on b, [b, a] will be returned)
   workspaceToPackageMap: { [workspacePath: string]: string[] }; // string[] is names of packages in workspace
@@ -155,7 +174,22 @@ export class PackageUtil {
   }
 
   /**
-   * Get map of local packages within repo specified by directory path
+   * Get the name-keyed resolution index of local packages within the repo specified by
+   * directory path. Derived from `getLocalPackagePathMap` (which owns discovery); see
+   * `LocalPackageMap` for the name-collision semantics.
+   *
+   * @param dir dir path that contains local packages
+   * @returns {[packageName: string]: LocalPackage}
+   */
+  static async getLocalPackageMap(dir: string): Promise<LocalPackageMap> {
+    return PackageUtil.toNameKeyedMap(await PackageUtil.getLocalPackagePathMap(dir));
+  }
+
+  /**
+   * Discover every local package within the repo specified by directory path, keyed by
+   * package.json path — the package's IDENTITY. Same-named packages (every workspace root is
+   * named `root`) are distinct entries here; anything that enumerates workspace members must
+   * start from this map, not from the name-keyed index.
    *
    * Discovery is a bounded, deterministic filesystem walk (`findPackageJsonFiles`):
    * - never descends into `node_modules` or `dist`
@@ -173,15 +207,15 @@ export class PackageUtil {
    * was fully traversed, OOMing workspace tooling regardless of heap size.
    *
    * @param dir dir path that contains local packages
-   * @returns {[packageName: string]: LocalPackage}
+   * @returns {[packageJsonPath: string]: LocalPackage}
    */
-  static async getLocalPackageMap(dir: string): Promise<LocalPackageMap> {
-    const packageMap: { [packageName: string]: LocalPackage } = {};
+  static async getLocalPackagePathMap(dir: string): Promise<LocalPackagePathMap> {
+    const packagePathMap: LocalPackagePathMap = {};
     const filePaths = await PackageUtil.findPackageJsonFiles(dir);
     for (const filePath of filePaths) {
       const packageJson = JSON.parse(await Fs.readFile(filePath));
       const name = packageJson['name'];
-      packageMap[name] = {
+      packagePathMap[filePath] = {
         name,
         filePath,
         packageJson,
@@ -196,7 +230,7 @@ export class PackageUtil {
         const workspaceLernaJson = (await Fs.exists(workspaceLernaJsonPath))
           ? JSON.parse(await Fs.readFile(workspaceLernaJsonPath))
           : undefined;
-        packageMap[name].workspace = {
+        packagePathMap[filePath].workspace = {
           path: workspacePath,
           rootPackageJson: workspacePackageJson,
           lernaJson: workspaceLernaJson,
@@ -204,7 +238,7 @@ export class PackageUtil {
       }
     }
 
-    return packageMap;
+    return packagePathMap;
   }
 
   /**
@@ -319,7 +353,8 @@ export class PackageUtil {
    * @returns `WorkspaceMetadata`
    */
   static async getWorkspaceMetadata(workspacePath: string): Promise<WorkspaceMetadata> {
-    const packageMap = await PackageUtil.getLocalPackageMap(workspacePath);
+    const packagePathMap = await PackageUtil.getLocalPackagePathMap(workspacePath);
+    const packageMap = PackageUtil.toNameKeyedMap(packagePathMap);
     const packageGraph = await PackageUtil.getPackageDependencyGraph(packageMap);
     const sortedPackageNames = PackageUtil.getDependencyOrder(packageGraph).filter(
       (packageName) => !!packageMap[packageName]
@@ -327,6 +362,7 @@ export class PackageUtil {
     const workspaceToPackageMap = PackageUtil.getWorkspaceToPackageMap(packageMap);
     return {
       packageMap,
+      packagePathMap,
       packageGraph,
       sortedPackageNames,
       workspaceToPackageMap,
@@ -369,17 +405,18 @@ export class PackageUtil {
   /**
    * Compute the transitive closure of workspace dependencies for `localPackage`.
    *
-   * Reuses `getPackageDependencyGraph`, which already crawls `dependencies` and
-   * `devDependencies` (transitively, across the whole workspace) and adds an
-   * edge `consumer -> dependency` for each. So the workspace deps reachable from
-   * a package are exactly the nodes reachable by following `successors` from its
-   * node. We do a cycle-safe traversal (a `visited` set), since the dependency
-   * graph can contain cycles. The package itself is excluded from the result.
+   * Traverses dependency DECLARATIONS (`dependencies` + `devDependencies`) starting from THIS
+   * package instance's own package.json, resolving each declared name through
+   * `localPackageMap` and expanding through the resolved packages' declarations in turn.
+   * Cycle safety and the visited set are PATH-KEYED (package.json paths): identity is the
+   * path, never the name. The closure is never seeded from a shared name-keyed graph node —
+   * same-named packages (every workspace root is named `root`) share such a node, so a
+   * graph-seeded closure conflates their dependencies and computes another package's closure
+   * for whichever same-named instance lost the name-keyed collision.
    *
-   * Only names present in `localPackageMap` are returned — i.e. packages that
-   * actually live in the workspace and can be symlinked (the graph already
-   * filters to file:/relative/workspace deps in `addDependencies`, but we filter
-   * again here so the result is exactly the set of linkable packages).
+   * Only names present in `localPackageMap` are traversed and returned — i.e. packages that
+   * actually live in the workspace and can be symlinked. The package itself is excluded from
+   * the result (its own path seeds the visited set).
    *
    * Public: WorkspaceDoctor (@proteinjs/build) diagnoses the same closure this method links —
    * verification and repair must agree on the set of packages that ought to be symlinked.
@@ -390,25 +427,24 @@ export class PackageUtil {
     localPackage: LocalPackage,
     localPackageMap: LocalPackageMap
   ): Promise<string[]> {
-    const graph = await PackageUtil.getPackageDependencyGraph(localPackageMap);
-    const rootPackageName = localPackage.packageJson['name'];
-
     const transitiveDependencies = new Set<string>();
-    const visited = new Set<string>([rootPackageName]);
-    const stack: string[] = [rootPackageName];
+    const visitedPaths = new Set<string>([localPackage.filePath]);
+    const stack: LocalPackage[] = [localPackage];
     while (stack.length > 0) {
       const current = stack.pop()!;
-      const successors = (graph.successors(current) as string[] | void) || [];
-      for (const dependencyPackageName of successors) {
-        if (visited.has(dependencyPackageName)) {
+      const declared = {
+        ...(current.packageJson['dependencies'] ?? {}),
+        ...(current.packageJson['devDependencies'] ?? {}),
+      };
+      for (const dependencyPackageName of Object.keys(declared)) {
+        const dependencyPackage = localPackageMap[dependencyPackageName];
+        if (!dependencyPackage || visitedPaths.has(dependencyPackage.filePath)) {
           continue;
         }
 
-        visited.add(dependencyPackageName);
-        stack.push(dependencyPackageName);
-        if (localPackageMap[dependencyPackageName]) {
-          transitiveDependencies.add(dependencyPackageName);
-        }
+        visitedPaths.add(dependencyPackage.filePath);
+        transitiveDependencies.add(dependencyPackageName);
+        stack.push(dependencyPackage);
       }
     }
 
@@ -536,6 +572,21 @@ export class PackageUtil {
         await cmd('ln', ['-s', shimRelative, shimPath], { cwd: packageDir });
       }
     }
+  }
+
+  /**
+   * Derive the name-keyed resolution index from the path-keyed discovery map. When several
+   * packages share a name, the lexicographically last package.json path wins — deterministic,
+   * and irrelevant for real dependency names (nothing declares a dep on `root`; uniquely-named
+   * packages resolve identically either way).
+   */
+  private static toNameKeyedMap(packagePathMap: LocalPackagePathMap): LocalPackageMap {
+    const packageMap: LocalPackageMap = {};
+    for (const filePath of Object.keys(packagePathMap).sort()) {
+      const localPackage = packagePathMap[filePath];
+      packageMap[localPackage.name] = localPackage;
+    }
+    return packageMap;
   }
 
   /**
