@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.10.4](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.3...@proteinjs/util-node@1.10.4) (2026-08-17)
+
+
+### Bug Fixes
+
+* package identity is the package.json path — name-keyed discovery dropped same-named packages ([9cd9721](https://github.com/proteinjs/util/commit/9cd9721dec7052f65b1021a4c004900ff19802a8)), closes [#75](https://github.com/proteinjs/util/issues/75)
+
+
+
+
+
 ## [1.10.3](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.2...@proteinjs/util-node@1.10.3) (2026-08-15)
 
 
