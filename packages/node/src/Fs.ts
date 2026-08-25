@@ -106,6 +106,12 @@ export class Fs {
   static async getFilePaths(dir: string, globIgnorePatterns: string[] = []) {
     return await globby(dir + '**/*', {
       ignore: [...globIgnorePatterns],
+      // Never follow directory symlinks: each real file must appear exactly once, at its real
+      // path. Following multiplies the walk through every workspace shortcut, and ONE
+      // ancestor-pointing link makes it INFINITE — fast-glob has no cycle guard, so a single
+      // walk over such a tree allocates the caller's entire heap (2026-08-24: three dev-server
+      // OOMs at 8-16GB, each one in-flight Glob over a symlinked metarepo workspace).
+      followSymbolicLinks: false,
     });
   }
 
@@ -120,6 +126,8 @@ export class Fs {
 
     return await globby(dirPrefix + glob, {
       ignore: [...globIgnorePatterns],
+      // See getFilePaths: symlink-following walks are unbounded on symlinked workspaces.
+      followSymbolicLinks: false,
     });
   }
 
@@ -187,7 +195,9 @@ export class Fs {
     const cwd = dir || process.cwd();
 
     const args: string[] = [
-      '-R', // recurse
+      '-r', // recurse WITHOUT following directory symlinks (-R follows; on a symlinked
+      // workspace that multiplies the search through every shortcut — and GNU grep walks
+      // ancestor-pointing links to the path-length limit. Same class as the Fs glob walkers.)
       '-n', // line numbers
       '-H', // show filename
       '-I', // ignore binary files
