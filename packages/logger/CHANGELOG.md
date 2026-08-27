@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.1.0](https://github.com/proteinjs/util/compare/@proteinjs/logger@1.0.22...@proteinjs/logger@1.1.0) (2026-08-27)
+
+
+### Features
+
+* **logger:** LOG_LEVEL env override — every Logger constructed without an explicit logLevel now respects LOG_LEVEL (debug|info|warn|error); explicit constructor level still wins, unset/unrecognized defers to the info default ([0f60623](https://github.com/proteinjs/util/commit/0f60623ca2f2dcf076144a54a8be2c81cb920069))
+
+
+
+
+
 ## [1.0.22](https://github.com/proteinjs/util/compare/@proteinjs/logger@1.0.21...@proteinjs/logger@1.0.22) (2026-08-13)
 
 **Note:** Version bump only for package @proteinjs/logger
