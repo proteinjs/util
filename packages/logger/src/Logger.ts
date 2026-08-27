@@ -16,7 +16,7 @@ export class Logger {
     if (name) {
       this.name = name;
     }
-    this.logLevel = logLevel ?? 'info';
+    this.logLevel = logLevel ?? Logger.envLogLevel() ?? 'info';
     this.logWriter = logWriter;
   }
 
@@ -94,5 +94,15 @@ export class Logger {
       inspectOptions,
       error,
     });
+  }
+
+  /**
+   * Process-wide log level override: `LOG_LEVEL` (debug|info|warn|error) applies to every
+   * `Logger` constructed without an explicit `logLevel`. An explicit constructor `logLevel`
+   * wins over the env; an unset or unrecognized `LOG_LEVEL` defers to the default ('info').
+   */
+  private static envLogLevel(): LogLevel | undefined {
+    const value = typeof process !== 'undefined' && process.env ? process.env.LOG_LEVEL : undefined;
+    return value === 'debug' || value === 'info' || value === 'warn' || value === 'error' ? value : undefined;
   }
 }
