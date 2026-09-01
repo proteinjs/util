@@ -2,6 +2,7 @@ import { InspectOptions } from 'util';
 import { LogLevel } from './LogLevel';
 import { getDefaultLogWriter, DefaultLogWriter } from './DefaultLogWriter';
 import { DevLogWriter } from './DevLogWriter';
+import { LogScrubber } from './LogScrubber';
 
 type LoggerParams = { name?: string; logLevel?: LogLevel; logWriter?: DefaultLogWriter };
 type Log = { message?: string; obj?: any; inspectOptions?: InspectOptions };
@@ -33,8 +34,10 @@ export class Logger {
       loggerName: this.name,
       logLevel: 'info',
       timestamp: new Date(),
-      message,
-      obj,
+      // The one categorical seam every log line passes: stray ciphertext envelopes become
+      // size markers here, whichever writer serializes them (see LogScrubber).
+      message: LogScrubber.scrub(message),
+      obj: LogScrubber.scrub(obj),
       inspectOptions,
     });
   }
@@ -48,8 +51,8 @@ export class Logger {
       loggerName: this.name,
       logLevel: 'debug',
       timestamp: new Date(),
-      message,
-      obj,
+      message: LogScrubber.scrub(message),
+      obj: LogScrubber.scrub(obj),
       inspectOptions,
     });
   }
@@ -63,8 +66,8 @@ export class Logger {
       loggerName: this.name,
       logLevel: 'info',
       timestamp: new Date(),
-      message,
-      obj,
+      message: LogScrubber.scrub(message),
+      obj: LogScrubber.scrub(obj),
       inspectOptions,
     });
   }
@@ -78,8 +81,8 @@ export class Logger {
       loggerName: this.name,
       logLevel: 'warn',
       timestamp: new Date(),
-      message,
-      obj,
+      message: LogScrubber.scrub(message),
+      obj: LogScrubber.scrub(obj),
       inspectOptions,
     });
   }
@@ -89,10 +92,10 @@ export class Logger {
       loggerName: this.name,
       logLevel: 'error',
       timestamp: new Date(),
-      message,
-      obj,
+      message: LogScrubber.scrub(message),
+      obj: LogScrubber.scrub(obj),
       inspectOptions,
-      error,
+      error: LogScrubber.scrub(error),
     });
   }
 
