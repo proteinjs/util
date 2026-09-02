@@ -9,11 +9,14 @@ export const parseArgsMap = (rawArgs: string[]): ArgsMap => {
       return;
     }
 
-    const keyValue = arg.slice(2).split('=');
-    if (keyValue.length > 1) {
-      args[keyValue[0]] = keyValue[1];
+    // Split on the FIRST '=' only — values legitimately contain '=' (e.g. --note=port=9040)
+    // and must be preserved in full.
+    const keyValue = arg.slice(2);
+    const separatorIndex = keyValue.indexOf('=');
+    if (separatorIndex >= 0) {
+      args[keyValue.slice(0, separatorIndex)] = keyValue.slice(separatorIndex + 1);
     } else {
-      args[keyValue[0]] = true;
+      args[keyValue] = true;
     }
   });
   return args;
