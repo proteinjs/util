@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.10.5](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.4...@proteinjs/util-node@1.10.5) (2026-09-02)
+
+
+### Bug Fixes
+
+* **util-node:** parseArgsMap splits on the FIRST '=' only — values with embedded '=' (the estate CLI's --note among them) previously truncated at the second '=' (split('=')[1] kept one segment). The parser now preserves the full value after the first separator; bare flags and empty values unchanged. RED RUN stated: ArgsMap.test 2/6 red at the pre-fix code (--note=a=b=c parsed as 'a'); green with the indexOf split. Bite verified: truncation re-introduced -> the 2 embedded-'=' pins red alone; restored green. Suite: packages/node 4 suites / 21 tests green (15 pre-existing + 6 new). ([277c1d6](https://github.com/proteinjs/util/commit/277c1d65e15d874f7c1750b3edf63bf905120780))
+
+
+
+
+
 ## [1.10.4](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.3...@proteinjs/util-node@1.10.4) (2026-08-17)
 
 
