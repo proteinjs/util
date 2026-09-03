@@ -14,6 +14,8 @@ import { Log, DefaultLogWriter } from '../src/DefaultLogWriter';
 // carries the PLAINTEXT BYTE length, computed key-free from the payload alone.
 const ENVELOPE = `pjenc:1:user-1:1:${'A'.repeat(52)}`;
 const MARKER = '[encrypted len=11]';
+/** A shape-realistic envelope for a plaintext of `bytes` bytes (see ENVELOPE above for the arithmetic). */
+const envelope = (bytes: number) => `pjenc:1:user-1:1:${'A'.repeat(Math.ceil(((bytes + 28) * 4) / 3))}`;
 
 const createCapturingWriter = () => {
   const entries: Log[] = [];
@@ -36,6 +38,23 @@ describe('LogScrubber', () => {
     expect(scrubbed.rows[0].body).toBe(MARKER);
     expect(scrubbed.note).toBe('clean');
     expect(payload.rows[0].body).toBe(ENVELOPE); // caller's object untouched
+  });
+
+  test('a logged thought row with leaf envelopes INSIDE its JSON document (a content leaf, a subtree envelope) renders size markers, never ciphertext', () => {
+    // The leaf-encryption storage shapes (ENCRYPTED_THOUGHT_OBJECT §4.1): an envelope string at a
+    // content path, and a `__pjLeafEnc` subtree envelope beside a kept plaintext id.
+    const row = {
+      id: 't-1',
+      object: { content: envelope(30), type: 'h2', fontSize: 24, children: { overrideThought: { adornment: 'bullet' } } },
+      sources: { __jsonColumnArray: [{ id: 's1', __pjLeafEnc: envelope(80) }] },
+    };
+    const scrubbed = LogScrubber.scrub(row) as any;
+    expect(scrubbed.object.content).toBe('[encrypted len=30]');
+    expect(scrubbed.object.type).toBe('h2');
+    expect(scrubbed.object.children).toEqual({ overrideThought: { adornment: 'bullet' } });
+    expect(scrubbed.sources.__jsonColumnArray[0]).toEqual({ id: 's1', __pjLeafEnc: '[encrypted len=80]' });
+    expect(JSON.stringify(scrubbed)).not.toContain('pjenc:1:');
+    expect(row.object.content.startsWith('pjenc:1:')).toBe(true); // input untouched
   });
 
   test('a clean payload passes through by reference (no copy, no cost)', () => {
