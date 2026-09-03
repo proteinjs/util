@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.11.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.6...@proteinjs/util-node@1.11.0) (2026-09-03)
+
+
+### Features
+
+* **util-node:** workspace membership is declared, never crawled — WorkspaceDeclaration is the one owner of which package.json files are members: a root's lerna.json `packages` (lerna's default packages/* when the field is absent) plus the root package.json `workspacePackages` extra roots name exactly its members; a declared root OWNS its subtree (nothing undeclared beneath it is a member, however the tree is walked from above); only a tree with no declaration at its root is crawled — bounded exactly as before (no hidden dirs, node_modules, dist, symlinks) — and it hands every declared root it meets to that root's declaration. Hard errors naming their paths: a declared literal with no package.json; two leaf packages sharing a name (containers — every root in the metarepo is named `root` — are path-identified and exempt). npm's own `workspaces` field is deliberately not read (a different install model). Why: n3xah/app Deploy to Test run 33747781291 (2026-09-03) — CI fixture trees carrying the app's own package names shadowed packages/common, server and ui in the crawl (last path wins), build-workspace built "1 package in workspace", the image shipped with no packages/server/dist, and the migration gate failed on `Cannot find module dist/generated/index.js`. RED RUN stated: the shadowing repro through PackageUtil.getWorkspaceMetadata resolved @t/server to the fixture path at the pre-fix scanner; green with the declaration wired in. Bites verified: collision check disarmed -> the collision pin red alone; declaration ignored at the root -> repro + globs + literal-missing red; restored green. Suite: packages/node 6 suites / 30 tests green (24 pre-existing + 6 new). ([a8f3684](https://github.com/proteinjs/util/commit/a8f368494a07146d850c33584428945601d223e3))
+
+
+
+
+
 ## [1.10.6](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.5...@proteinjs/util-node@1.10.6) (2026-09-02)
 
 
