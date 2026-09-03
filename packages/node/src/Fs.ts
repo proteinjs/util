@@ -104,21 +104,24 @@ export class Fs {
   // @param globIgnorePatterns ie. ['**/node_modules/**', '**/dist/**'] to ignore these directories
   // @return string[] of file paths
   static async getFilePaths(dir: string, globIgnorePatterns: string[] = []) {
-    return await globby(dir + '**/*', {
-      ignore: [...globIgnorePatterns],
-    });
+    return await Fs.getFilePathsMatchingGlob(dir, '**/*', globIgnorePatterns);
   }
 
   // @param dirPrefix recursively search for files in this dir
   // @param glob file matching pattern ie. **/package.json
   // @param globIgnorePatterns ie. ['**/node_modules/**', '**/dist/**'] to ignore these directories
-  // @return string[] of file paths
+  // @return string[] of absolute file paths
   static async getFilePathsMatchingGlob(dirPrefix: string, glob: string, globIgnorePatterns: string[] = []) {
-    if (dirPrefix[dirPrefix.length - 1] != path.sep) {
-      dirPrefix += path.sep;
-    }
-
-    return await globby(dirPrefix + glob, {
+    // Match relative to the directory (`cwd`) rather than folding it into an absolute pattern.
+    // In the absolute form fast-glob matched the ignore list against the absolute entry path,
+    // and a globstar does not cross a dot-segment — so under any base path containing a
+    // dot-directory (`~/.n3xa/workspaces/<name>`, a `.scratch` estate) the ignore list matched
+    // nothing: every node_modules/dist was walked in full, workspace symlinks followed into
+    // cycles, and the caller ran out of heap on a large tree. Relative matching keeps the ignore
+    // list and the entry paths in the same frame, so the prune holds under any base path.
+    return await globby(glob, {
+      cwd: dirPrefix,
+      absolute: true,
       ignore: [...globIgnorePatterns],
     });
   }

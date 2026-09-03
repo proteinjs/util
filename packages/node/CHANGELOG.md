@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.10.6](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.5...@proteinjs/util-node@1.10.6) (2026-09-02)
+
+
+### Bug Fixes
+
+* **util-node:** Fs glob helpers prune ignored directories under a dot-directory base path — match relative to cwd (absolute:true) instead of folding the directory into an absolute pattern. In the absolute form fast-glob matched the ignore list against the absolute entry path and a globstar does not cross a dot-segment, so under ~/.n3xa/workspaces/<name> (the default local workspaces root) or a .scratch estate the ignore list matched nothing: every node_modules/dist was walked in full, workspace symlinks followed into cycles, and the dev-skill Glob of every package.json over a materialized metarepo exhausted a 12G heap three times running (2026-09-02). getFilePaths now rides the same path (its dir + '**/*' form walked one level only without a trailing separator). RED RUN stated: Fs.getFilePathsMatchingGlob.test 3/3 red at the pre-fix code (EACCES from inside node_modules/dep/locked under a dot-directory tmp root — the walk provably entering node_modules); green with the cwd form. Bite verified: absolute form re-introduced -> 3/3 red; restored green. Suite: packages/node 5 suites / 24 tests green (21 pre-existing + 3 new). ([2aace27](https://github.com/proteinjs/util/commit/2aace277e5e5727dc2666ee0a3cd3d49a3c69932))
+
+
+
+
+
 ## [1.10.5](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.4...@proteinjs/util-node@1.10.5) (2026-09-02)
 
 
