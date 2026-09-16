@@ -5,12 +5,12 @@ import { PackageUtil } from '../src/PackageUtil';
 import { WorkspaceDeclaration, WorkspaceDeclarationError } from '../src/WorkspaceDeclaration';
 
 /**
- * Workspace membership comes from the DECLARATION, never from a crawl (n3xah/app Deploy to Test
- * run 33747781291, 2026-09-03): the scanner crawled every package.json under the app and keyed
+ * Workspace membership comes from the DECLARATION, never from a crawl (a consumer application's
+ * release build): the scanner crawled every package.json under the app and keyed
  * them by name, so CI fixture trees whose package.json files reused the app's own package names
- * (`@n3xa/app-common/-server/-ui` under scripts/ci/fixtures) shadowed the real packages — walk
+ * (`@acme/app-common/-server/-ui` under a CI fixtures directory) shadowed the real packages — walk
  * order put the fixtures last, they had no build script, and build-workspace reported "1 package
- * in workspace" (ops/error-bridge), shipping an image with no packages/server/dist.
+ * in workspace", shipping an image with no packages/server/dist.
  *
  * The rules pinned here:
  *  - a directory holding lerna.json `packages` (or a root package.json `workspacePackages`) is a

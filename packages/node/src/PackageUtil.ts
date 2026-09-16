@@ -197,8 +197,8 @@ export class PackageUtil {
    * exactly its members, a declared root owns its subtree, and only a tree with no declaration
    * at its root is walked (bounded: never into hidden directories, `node_modules`, `dist`, or
    * through symlinks — the unbounded-glob OOM of 2026-09-02 stays fixed). A same-named
-   * package.json nobody declared (the CI fixture trees that shadowed the app's packages in
-   * n3xah/app run 33747781291) is not a member; a leaf-name collision among members is a hard
+   * package.json nobody declared (CI fixture trees that shadowed an application's
+   * own packages) is not a member; a leaf-name collision among members is a hard
    * error naming both paths.
    *
    * @param dir dir path that contains local packages
@@ -368,10 +368,10 @@ export class PackageUtil {
    * This links the package's full TRANSITIVE closure of workspace dependencies,
    * not just its directly-declared ones. A package's `package.json` only lists
    * its direct deps, but those deps pull in workspace packages of their own
-   * (e.g. `flow-server` declares `@n3xah/space-server`, which itself depends on
-   * `@n3xah/space-common`). Node resolves a transitive dep like `space-common`
+   * (e.g. `app-server` declares `@acme/core-server`, which itself depends on
+   * `@acme/core-common`). Node resolves a transitive dep like `core-common`
    * out of the consumer's own `node_modules` first, so if we only symlinked
-   * direct deps, npm would satisfy `space-common` with a stale registry copy
+   * direct deps, npm would satisfy `core-common` with a stale registry copy
    * that lags the live workspace source — causing schema/version drift. By
    * linking the whole closure, every workspace package a package can reach at
    * runtime resolves to the live source tree.

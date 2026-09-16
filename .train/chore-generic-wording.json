@@ -1,0 +1,9 @@
+{
+  "branch": "chore/generic-wording",
+  "packages": ["node"],
+  "suites": [
+    "packages/node/test/Fs.getFilePathsMatchingGlob.test.ts",
+    "packages/node/test/WorkspaceDeclaration.test.ts"
+  ],
+  "removes": []
+}

@@ -115,7 +115,7 @@ export class Fs {
     // Match relative to the directory (`cwd`) rather than folding it into an absolute pattern.
     // In the absolute form fast-glob matched the ignore list against the absolute entry path,
     // and a globstar does not cross a dot-segment — so under any base path containing a
-    // dot-directory (`~/.n3xa/workspaces/<name>`, a `.scratch` estate) the ignore list matched
+    // dot-directory (`~/.workspaces/<name>`, a `.scratch` checkout) the ignore list matched
     // nothing: every node_modules/dist was walked in full, workspace symlinks followed into
     // cycles, and the caller ran out of heap on a large tree. Relative matching keeps the ignore
     // list and the entry paths in the same frame, so the prune holds under any base path.

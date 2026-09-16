@@ -10,7 +10,7 @@ import { Fs } from '../src/Fs';
  * `Fs` used to fold the base directory into one absolute pattern (`<dir>/<glob>`) and hand
  * fast-glob the ignore list, which fast-glob then matched against the ABSOLUTE entry path. A
  * globstar does not cross a dot-segment, so whenever the base path itself contained a
- * dot-directory (`~/.n3xa/workspaces/<name>` — the default local workspaces root — or a
+ * dot-directory (`~/.workspaces/<name>` — a clone root under a dot-directory — or a
  * `.scratch` estate) the ignore list matched nothing: the walk entered every node_modules/dist
  * and followed the workspace symlinks inside them. On a materialized metarepo (70+
  * node_modules trees) that is millions of entries held in fast-glob's unique-index, and the

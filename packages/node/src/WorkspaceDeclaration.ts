@@ -41,10 +41,10 @@ type Declaration = {
  * Why: the previous crawl (every package.json under the root, keyed by name, last path wins)
  * let a CI fixture tree whose package.json files reused the app's own package names shadow the
  * real packages — build-workspace built "1 package in workspace" and the release image shipped
- * with no server dist (n3xah/app Deploy to Test run 33747781291, 2026-09-03). A declaration
+ * with no server dist. A declaration
  * cannot be shadowed by a file nobody declared.
  *
- * A tree with no declaration at its root (the n3xa metarepo root) still crawls — bounded exactly
+ * A tree with no declaration at its root (a metarepo root) still crawls — bounded exactly
  * as before: never into hidden directories, `node_modules`, `dist`, or through symlinks — and
  * hands every declared root it meets to that root's declaration.
  *
