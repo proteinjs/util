@@ -2,6 +2,7 @@ import { InspectOptions } from 'util';
 import { LogLevel } from './LogLevel';
 import { getDefaultLogWriter, DefaultLogWriter } from './DefaultLogWriter';
 import { DevLogWriter } from './DevLogWriter';
+import { LogLineErrors } from './LogLineErrors';
 
 type LoggerParams = { name?: string; logLevel?: LogLevel; logWriter?: DefaultLogWriter };
 type Log = { message?: string; obj?: any; inspectOptions?: InspectOptions };
@@ -20,23 +21,8 @@ export class Logger {
     this.logWriter = logWriter;
   }
 
-  private getLogWriter() {
-    if (!this.logWriter) {
-      this.logWriter = getDefaultLogWriter() ?? new DevLogWriter();
-    }
-
-    return this.logWriter;
-  }
-
   log({ message, obj, inspectOptions }: Log) {
-    this.getLogWriter().write({
-      loggerName: this.name,
-      logLevel: 'info',
-      timestamp: new Date(),
-      message,
-      obj,
-      inspectOptions,
-    });
+    this.write('info', { message, obj, inspectOptions });
   }
 
   debug({ message, obj, inspectOptions }: Log) {
@@ -44,14 +30,7 @@ export class Logger {
       return;
     }
 
-    this.getLogWriter().write({
-      loggerName: this.name,
-      logLevel: 'debug',
-      timestamp: new Date(),
-      message,
-      obj,
-      inspectOptions,
-    });
+    this.write('debug', { message, obj, inspectOptions });
   }
 
   info({ message, obj, inspectOptions }: Log) {
@@ -59,14 +38,7 @@ export class Logger {
       return;
     }
 
-    this.getLogWriter().write({
-      loggerName: this.name,
-      logLevel: 'info',
-      timestamp: new Date(),
-      message,
-      obj,
-      inspectOptions,
-    });
+    this.write('info', { message, obj, inspectOptions });
   }
 
   warn({ message, obj, inspectOptions }: Log) {
@@ -74,26 +46,37 @@ export class Logger {
       return;
     }
 
-    this.getLogWriter().write({
-      loggerName: this.name,
-      logLevel: 'warn',
-      timestamp: new Date(),
-      message,
-      obj,
-      inspectOptions,
-    });
+    this.write('warn', { message, obj, inspectOptions });
   }
 
   error({ message, obj, inspectOptions, error }: ErrorLog) {
+    this.write('error', { message, obj, inspectOptions, error });
+  }
+
+  /**
+   * The ONE door to the log writer. What a line carries passes through `LogLineErrors.forLine`
+   * first, so an error marked as never printing its own text reaches every writer — the default
+   * one, a consumer's structured one — as its printed stand-in, at every level, as the line's
+   * `error` or anywhere inside its `obj`.
+   */
+  private write(logLevel: LogLevel, { message, obj, inspectOptions, error }: ErrorLog) {
     this.getLogWriter().write({
       loggerName: this.name,
-      logLevel: 'error',
+      logLevel,
       timestamp: new Date(),
       message,
-      obj,
+      obj: LogLineErrors.forLine(obj),
       inspectOptions,
-      error,
+      ...(logLevel === 'error' ? { error: LogLineErrors.forLine(error) } : {}),
     });
+  }
+
+  private getLogWriter() {
+    if (!this.logWriter) {
+      this.logWriter = getDefaultLogWriter() ?? new DevLogWriter();
+    }
+
+    return this.logWriter;
   }
 
   /**
