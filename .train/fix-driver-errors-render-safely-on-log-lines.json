@@ -1,6 +1,9 @@
 {
   "branch": "fix/driver-errors-render-safely-on-log-lines",
   "packages": ["logger"],
-  "suites": ["packages/logger/test/LogLineErrors.test.ts", "packages/logger/test/Logger.test.ts"],
+  "suites": [
+    "packages/logger/test/LogLineErrors.test.ts",
+    "packages/logger/test/Logger.test.ts"
+  ],
   "removes": []
 }
