@@ -256,9 +256,10 @@ describe('the line is its owner`s answer, asked at each write', () => {
     expect(printedLine(entries[0])).not.toContain(VALUE);
   });
 
-  it('a value that refuses to be walked is carried as one fixed phrase, never as it is', () => {
+  it('a container that refuses to be read is carried as one fixed phrase — that container alone, the rest of the line stands', () => {
     const { entries, logger } = capture();
-    LogLineErrors.mark(vendorError(), () => LINE);
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
     const refusing = new Proxy(
       {},
       {
@@ -269,9 +270,265 @@ describe('the line is its owner`s answer, asked at each write', () => {
       }
     );
 
-    logger.info({ message: 'a line', obj: { refusing } });
+    logger.info({ message: 'a line', obj: { refusing, kept: { as: 'it is' }, error } });
 
-    expect(entries[0].obj).toBe('(a value that could not be prepared for a log line)');
+    expect(entries[0].obj.refusing).toBe('(a value that could not be read for a log line)');
+    expect(entries[0].obj.kept).toEqual({ as: 'it is' });
+    expect(entries[0].obj.error.message).toBe(SENTENCE);
+  });
+});
+
+describe('whatever holds a marked error', () => {
+  class Outcome {
+    constructor(
+      readonly failure: unknown,
+      readonly note = 'kept'
+    ) {}
+    describe() {
+      return 'an outcome';
+    }
+  }
+
+  it('a class instance: the copy is of the same class, with the stand-in in place', () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const outcome = new Outcome(error);
+
+    logger.warn({ message: 'a line', obj: { outcome } });
+
+    expect(printedLine(entries[0])).not.toContain(VALUE);
+    expect(entries[0].obj.outcome).toBeInstanceOf(Outcome);
+    expect(entries[0].obj.outcome.failure.message).toBe(SENTENCE);
+    expect(entries[0].obj.outcome.note).toBe('kept');
+    expect(entries[0].obj.outcome.describe()).toBe('an outcome');
+    expect(outcome.failure).toBe(error);
+  });
+
+  // Each holder rides a line of its own: a holder copied for one marked error has every member
+  // looked at, which would hide a member the walk itself never read.
+  it('a Map, as a value', () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const byName = new Map<unknown, unknown>([
+      ['failed', error],
+      ['kept', 1],
+    ]);
+
+    logger.error({ message: 'a line', obj: { byName } });
+
+    expect(printedLine(entries[0])).not.toContain(VALUE);
+    const written = entries[0].obj.byName as Map<unknown, unknown>;
+    expect(written).toBeInstanceOf(Map);
+    expect((written.get('failed') as Error).message).toBe(SENTENCE);
+    expect(written.get('kept')).toBe(1);
+    expect(byName.get('failed')).toBe(error);
+  });
+
+  it('a Map, as a key', () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const notes = new Map<unknown, unknown>([
+      ['kept', 1],
+      [error, 'a note'],
+    ]);
+
+    logger.error({ message: 'a line', obj: { notes } });
+
+    expect(printedLine(entries[0])).not.toContain(VALUE);
+    const keys = [...(entries[0].obj.notes as Map<unknown, unknown>).keys()];
+    expect(keys.map((key) => (key instanceof Error ? key.message : key))).toEqual(['kept', SENTENCE]);
+    expect(notes.has(error)).toBe(true);
+  });
+
+  it('a Set', () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const failures = new Set<unknown>([error, 'kept']);
+
+    logger.error({ message: 'a line', obj: { failures } });
+
+    expect(printedLine(entries[0])).not.toContain(VALUE);
+    const written = entries[0].obj.failures as Set<unknown>;
+    expect(written).toBeInstanceOf(Set);
+    expect([...written].map((each) => (each instanceof Error ? each.message : each))).toEqual([SENTENCE, 'kept']);
+    expect(failures.has(error)).toBe(true);
+  });
+
+  it('a symbol key', () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const key = Symbol('failure');
+
+    logger.info({ message: 'a line', obj: { [key]: error, kept: 1 } });
+
+    expect(printedLine(entries[0])).not.toContain(VALUE);
+    expect(entries[0].obj[key].message).toBe(SENTENCE);
+    expect(entries[0].obj.kept).toBe(1);
+  });
+
+  it('a property that does not enumerate', () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const obj = Object.defineProperty({ kept: 1 }, 'hidden', { value: error, enumerable: false });
+
+    logger.info({ message: 'a line', obj });
+
+    expect(printedLine(entries[0])).not.toContain(VALUE);
+    expect(entries[0].obj.hidden.message).toBe(SENTENCE);
+    expect(Object.getOwnPropertyDescriptor(entries[0].obj, 'hidden')?.enumerable).toBe(false);
+  });
+
+  it('never runs a getter or a toJSON on the way: a copy carries the accessor itself', () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const ran: string[] = [];
+    const obj = {
+      error,
+      get computed() {
+        ran.push('getter');
+        return 1;
+      },
+      nested: {
+        toJSON() {
+          ran.push('toJSON');
+          return {};
+        },
+        get deep() {
+          ran.push('nested getter');
+          return 1;
+        },
+      },
+    };
+
+    logger.error({ message: 'a line', obj });
+
+    expect(ran).toEqual([]);
+    expect(entries[0].obj.error.message).toBe(SENTENCE);
+    expect(typeof Object.getOwnPropertyDescriptor(entries[0].obj, 'computed')?.get).toBe('function');
+    expect(entries[0].obj.nested).toBe(obj.nested);
+  });
+
+  it('only the containers on the way to it are copied: everything beside it is the very same value', () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const rows = [{ id: 1 }, { id: 2 }];
+    const beside = { rows };
+    const obj = { beside, holder: { error } };
+
+    logger.error({ message: 'a line', obj });
+
+    expect(entries[0].obj).not.toBe(obj);
+    expect(entries[0].obj.holder).not.toBe(obj.holder);
+    expect(entries[0].obj.beside).toBe(beside);
+    expect(entries[0].obj.beside.rows).toBe(rows);
+  });
+});
+
+describe('the walk is bounded: what lies beyond is left as it is, never replaced', () => {
+  const nestedUnder = (levels: number, leaf: unknown) => {
+    let value: unknown = leaf;
+    for (let level = 0; level < levels; level++) {
+      value = { value };
+    }
+    return value as { [key: string]: unknown };
+  };
+
+  it(`a marked error held ${LogLineErrors.WALK_DEPTH} containers down is swapped; one container deeper, the line is the very same value`, () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const within = nestedUnder(LogLineErrors.WALK_DEPTH, { error });
+    const beyond = nestedUnder(LogLineErrors.WALK_DEPTH + 1, { error });
+
+    logger.info({ message: 'within', obj: within });
+    logger.info({ message: 'beyond', obj: beyond });
+
+    expect(inspect(entries[0].obj, { depth: null })).not.toContain(VALUE);
+    expect(inspect(entries[0].obj, { depth: null })).toContain(SENTENCE);
+    expect(entries[1].obj).toBe(beyond);
+  });
+
+  it('reads the same number of values however long the line: a million-element array, a 20,000-row list', () => {
+    LogLineErrors.mark(vendorError(), () => LINE); // something in the process is marked
+    let reads = 0;
+    const counted = <T extends object>(target: T): T =>
+      new Proxy(target, {
+        getOwnPropertyDescriptor: (inner, key) => {
+          reads++;
+          return Reflect.getOwnPropertyDescriptor(inner, key);
+        },
+      });
+    const numbers = counted(new Array(1_000_000).fill(7));
+    const rows = counted(Array.from({ length: 20_000 }, (_each, id) => counted({ id, tags: ['a', 'b'] })));
+
+    expect(LogLineErrors.forLine({ numbers })).toEqual({ numbers });
+    expect(reads).toBeLessThanOrEqual(LogLineErrors.WALK_VALUES);
+    reads = 0;
+    const line = { rows };
+    expect(LogLineErrors.forLine(line)).toBe(line);
+    expect(reads).toBeLessThanOrEqual(LogLineErrors.WALK_VALUES);
+  });
+
+  it('nearest first: a marked error BESIDE a list longer than the budget is found, and the list rides along untouched', () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const rows = Array.from({ length: LogLineErrors.WALK_VALUES * 4 }, (_each, id) => ({ id, meta: { tags: ['a'] } }));
+
+    logger.error({ message: 'a line', obj: { rows, error } });
+
+    expect(entries[0].obj.error.message).toBe(SENTENCE);
+    expect(entries[0].obj.rows).toBe(rows);
+  });
+
+  it('a marked error past the budget, deep in a long list, is left as it is — and so is every row of the line', () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const rows: { [key: string]: unknown }[] = Array.from({ length: LogLineErrors.WALK_VALUES * 2 }, (_each, id) => ({
+      id,
+    }));
+    rows[rows.length - 1].error = error;
+    const obj = { rows };
+
+    logger.info({ message: 'a line', obj });
+
+    expect(entries[0].obj).toBe(obj);
+  });
+
+  it('a marked error the walk never reached is still swapped when its holder is copied for another', () => {
+    const { entries, logger } = capture();
+    const [early, late] = [vendorError(), vendorError()];
+    [early, late].forEach((each) => LogLineErrors.mark(each, () => LINE));
+    const results: unknown[] = new Array(LogLineErrors.WALK_VALUES * 2).fill(0);
+    results[0] = early;
+    results[results.length - 1] = late;
+
+    logger.warn({ message: 'a line', obj: { results } });
+
+    expect(entries[0].obj.results[0].message).toBe(SENTENCE);
+    expect(entries[0].obj.results[results.length - 1].message).toBe(SENTENCE);
+    expect(entries[0].obj.results).toHaveLength(results.length);
+  });
+
+  it('a typed array is not read into: its bytes spend none of the budget', () => {
+    const { entries, logger } = capture();
+    const error = vendorError();
+    LogLineErrors.mark(error, () => LINE);
+    const bytes = Buffer.alloc(LogLineErrors.WALK_VALUES * 2);
+
+    logger.error({ message: 'a line', obj: { bytes, holder: { error } } });
+
+    expect(entries[0].obj.holder.error.message).toBe(SENTENCE);
+    expect(entries[0].obj.bytes).toBe(bytes);
   });
 });
 
