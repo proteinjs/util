@@ -7,3 +7,4 @@ export * from './src/GitUtil';
 export * from './src/ArgsMap';
 export * from './src/LogColorWrapper';
 export * from './src/WorkspaceDeclaration';
+export * from './src/RequestDigests';
