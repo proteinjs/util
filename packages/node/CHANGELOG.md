@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.11.1](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.11.0...@proteinjs/util-node@1.11.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* **util-node:** redactError never throws, renames address-named fields, drops bytes, carries getter-kept fields ([bbac722](https://github.com/proteinjs/util/commit/bbac722dff937f61b9722ba460e7769fdcfa1014))
+* **util-node:** RequestDigests — the keyed digests a server logs in place of an address ([afe2fc9](https://github.com/proteinjs/util/commit/afe2fc9582e8f741b2e3731382331b5f956b79c4))
+* **util-node:** RequestDigests.redactError — an error's addresses as their digests before it reaches a log ([b61fe49](https://github.com/proteinjs/util/commit/b61fe493b4dacf68a48f6a8e14ff6d2a9cc5c58c))
+
+
+
+
+
 # [1.11.0](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.10.6...@proteinjs/util-node@1.11.0) (2026-09-03)
 
 
