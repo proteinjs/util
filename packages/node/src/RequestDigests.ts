@@ -26,10 +26,23 @@ import { createHmac } from 'crypto';
  * either (the session middleware refuses to start), so nothing ever runs unkeyed — never a plain
  * hash a list of addresses could reverse, never a per-process key that quietly stops matching
  * across replicas.
+ *
+ * An error is the one thing a log line carries whose words the server did not write: a database's
+ * unique-index violation names the key it refused, a mail server's reply names the recipient it
+ * refused. `redactError(error)` is the door every such error passes through on its way to a log.
  */
 export class RequestDigests {
   /** Hex characters kept from the HMAC: 64 bits. */
   private static readonly DIGEST_HEX_LENGTH = 16;
+  /**
+   * An e-mail address as it shows up in text: bare, or URL-encoded (`%40` for the `@`) as a request
+   * path or a query string carries it.
+   */
+  private static readonly ADDRESS_SHAPE = /[A-Za-z0-9._%+-]+(?:@|%40)[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+  /** How deep `redactError` follows nested objects; anything deeper is dropped, never passed through. */
+  private static readonly MAX_ERROR_DEPTH = 10;
+  /** What stands in for a value nested deeper than `MAX_ERROR_DEPTH`. */
+  private static readonly TOO_DEEP = '[dropped: nested too deep]';
 
   constructor(private readonly options?: { secret?: string }) {}
 
@@ -46,6 +59,22 @@ export class RequestDigests {
   /** The coarse IP hash of a client address. */
   coarseIp(address: string): string {
     return this.digest('coarse-ip', this.coarsen(address.trim().toLowerCase()));
+  }
+
+  /**
+   * A copy of `error` a log line may carry: every e-mail address in it — bare or URL-encoded —
+   * swapped for its address digest, wherever it sits: the message, the stack, a `cause`, an
+   * aggregate's `errors`, a `rejected` list, any string property at any depth. The stack is kept
+   * as it is except for the addresses in it; the copy keeps the error's class (so it still reads
+   * and prints as that error) and every other word of it. The original is never touched — the
+   * caller still holds and throws the real error.
+   *
+   * Anything that is not an error passes through the same way (a string, a list, an object), so a
+   * caller never has to know what it caught. Something nested deeper than any error carries is
+   * dropped rather than passed through unread.
+   */
+  redactError<T>(error: T): T {
+    return this.redacted(error, new Map<object, unknown>(), 0) as T;
   }
 
   private digest(purpose: string, value: string): string {
@@ -102,5 +131,108 @@ export class RequestDigests {
       return undefined;
     }
     return groups.map((group) => parseInt(group, 16).toString(16));
+  }
+
+  /**
+   * `value` with every address swapped (`redactError`'s walk). `seen` maps each object already
+   * copied to its copy, so a cycle (an error whose cause points back at it) closes on the copy.
+   */
+  private redacted(value: unknown, seen: Map<object, unknown>, depth: number): unknown {
+    if (typeof value === 'string') {
+      return this.redactedText(value);
+    }
+    if (value === null || typeof value !== 'object') {
+      return value;
+    }
+    if (seen.has(value)) {
+      return seen.get(value);
+    }
+    if (value instanceof Date || value instanceof RegExp || value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
+      return value;
+    }
+    if (depth >= RequestDigests.MAX_ERROR_DEPTH) {
+      return RequestDigests.TOO_DEEP;
+    }
+    if (Array.isArray(value)) {
+      const copy: unknown[] = [];
+      seen.set(value, copy);
+      value.forEach((entry) => copy.push(this.redacted(entry, seen, depth + 1)));
+      return copy;
+    }
+    if (value instanceof Map) {
+      const copy = new Map<unknown, unknown>();
+      seen.set(value, copy);
+      value.forEach((entry, key) =>
+        copy.set(this.redacted(key, seen, depth + 1), this.redacted(entry, seen, depth + 1))
+      );
+      return copy;
+    }
+    if (value instanceof Set) {
+      const copy = new Set<unknown>();
+      seen.set(value, copy);
+      value.forEach((entry) => copy.add(this.redacted(entry, seen, depth + 1)));
+      return copy;
+    }
+    if (value instanceof Error) {
+      return this.redactedErrorObject(value, seen, depth);
+    }
+    // Any other object reads as its own fields: a class instance's methods are not what a log line
+    // prints, and a copy that kept its class could not run them without the original's internals.
+    const copy: Record<string, unknown> = {};
+    seen.set(value, copy);
+    for (const key of Object.keys(value)) {
+      copy[key] = this.redacted((value as Record<string, unknown>)[key], seen, depth + 1);
+    }
+    return copy;
+  }
+
+  /**
+   * An error's copy: a native error (so every printer treats it as one — a stack, a cause) of the
+   * same class, holding every property the error holds itself — the non-enumerable ones included
+   * (`message`, `stack`, a `cause`, an aggregate's `errors`), each with the same visibility it had,
+   * so the copy prints and serializes as the original did.
+   */
+  private redactedErrorObject(error: Error, seen: Map<object, unknown>, depth: number): Error {
+    const copy = new Error();
+    Object.setPrototypeOf(copy, Object.getPrototypeOf(error));
+    seen.set(error, copy);
+    const own = Object.getOwnPropertyNames(error);
+    // The fresh error's own stack (captured here) is not the original's: only the original's fields stay.
+    for (const key of Object.getOwnPropertyNames(copy)) {
+      if (own.indexOf(key) < 0) {
+        delete (copy as unknown as Record<string, unknown>)[key];
+      }
+    }
+    for (const key of own) {
+      const descriptor = Object.getOwnPropertyDescriptor(error, key);
+      let field: unknown;
+      try {
+        field = (error as unknown as Record<string, unknown>)[key];
+      } catch {
+        // A getter that throws on the error itself: nothing to print, so nothing to carry.
+        continue;
+      }
+      Object.defineProperty(copy, key, {
+        value: this.redacted(field, seen, depth + 1),
+        enumerable: descriptor?.enumerable ?? false,
+        writable: true,
+        configurable: true,
+      });
+    }
+    return copy;
+  }
+
+  /** A text with every address in it — bare or URL-encoded — replaced by its address digest. */
+  private redactedText(text: string): string {
+    return text.replace(RequestDigests.ADDRESS_SHAPE, (match) => this.address(this.decoded(match)));
+  }
+
+  /** A URL-encoded address as the address it stands for (`ada%2Blane%40example.com` → `ada+lane@example.com`). */
+  private decoded(match: string): string {
+    try {
+      return decodeURIComponent(match);
+    } catch {
+      return match;
+    }
   }
 }
