@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.2.0](https://github.com/proteinjs/util/compare/@proteinjs/logger@1.1.1...@proteinjs/logger@1.2.0) (2026-09-24)
+
+
+### Bug Fixes
+
+* **logger:** a marked error is found in whatever holds it, and a line's walk is bounded — class instances, Maps, Sets and symbol keys are read; accessors and toJSON never run; 10 levels and 5,000 values, nearest first; only the way to a marked error is copied, what lies beyond is left as it is ([b0d4d86](https://github.com/proteinjs/util/commit/b0d4d8639a26be7bcef98fc46992ab257f9f965c))
+
+
+### Features
+
+* **logger:** an error its catcher marks never prints its own text — every line carries the catcher's code and sentence ([81d4ff2](https://github.com/proteinjs/util/commit/81d4ff2712769e97e9d07464630be5fe1a2dc89c))
+
+
+
+
+
 ## [1.1.1](https://github.com/proteinjs/util/compare/@proteinjs/logger@1.1.0...@proteinjs/logger@1.1.1) (2026-09-13)
 
 **Note:** Version bump only for package @proteinjs/logger
