@@ -1,4 +1,5 @@
 import { createHmac } from 'crypto';
+import { types } from 'util';
 
 /**
  * The keyed digests a server writes on its log lines — and keys its throttle windows on — in place
@@ -43,6 +44,8 @@ export class RequestDigests {
   private static readonly MAX_ERROR_DEPTH = 10;
   /** What stands in for a value nested deeper than `MAX_ERROR_DEPTH`. */
   private static readonly TOO_DEEP = '[dropped: nested too deep]';
+  /** What stands in for a field that cannot be read (a getter that throws) or an object that refuses to list its fields. */
+  private static readonly UNREADABLE = '[dropped: unreadable]';
 
   constructor(private readonly options?: { secret?: string }) {}
 
@@ -147,8 +150,12 @@ export class RequestDigests {
     if (seen.has(value)) {
       return seen.get(value);
     }
-    if (value instanceof Date || value instanceof RegExp || value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
+    if (value instanceof Date || value instanceof RegExp) {
       return value;
+    }
+    if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
+      // Bytes are words nobody has read — a reply's body spells whatever the server sent. Dropped, never carried.
+      return `[dropped: binary, ${value.byteLength} bytes]`;
     }
     if (depth >= RequestDigests.MAX_ERROR_DEPTH) {
       return RequestDigests.TOO_DEEP;
@@ -173,15 +180,21 @@ export class RequestDigests {
       value.forEach((entry) => copy.add(this.redacted(entry, seen, depth + 1)));
       return copy;
     }
-    if (value instanceof Error) {
+    // An error of another realm (a vm context's) is not `instanceof` this one's Error; it is still a native error.
+    if (value instanceof Error || types.isNativeError(value)) {
       return this.redactedErrorObject(value, seen, depth);
     }
     // Any other object reads as its own fields: a class instance's methods are not what a log line
     // prints, and a copy that kept its class could not run them without the original's internals.
+    // A field's NAME is text too (a per-recipient map keys its entries by the address).
+    const keys = this.keysOf(value);
+    if (!keys) {
+      return RequestDigests.UNREADABLE;
+    }
     const copy: Record<string, unknown> = {};
     seen.set(value, copy);
-    for (const key of Object.keys(value)) {
-      copy[key] = this.redacted((value as Record<string, unknown>)[key], seen, depth + 1);
+    for (const key of keys) {
+      copy[this.redactedText(key)] = this.redacted(this.fieldOf(value, key), seen, depth + 1);
     }
     return copy;
   }
@@ -190,7 +203,9 @@ export class RequestDigests {
    * An error's copy: a native error (so every printer treats it as one — a stack, a cause) of the
    * same class, holding every property the error holds itself — the non-enumerable ones included
    * (`message`, `stack`, a `cause`, an aggregate's `errors`), each with the same visibility it had,
-   * so the copy prints and serializes as the original did.
+   * so the copy prints and serializes as the original did. A field the error's class keeps behind a
+   * getter (a DOMException's name, message and code live in internal slots no copy can have) is
+   * carried as what the getter answered, so the copy reads as the original did instead of throwing.
    */
   private redactedErrorObject(error: Error, seen: Map<object, unknown>, depth: number): Error {
     const copy = new Error();
@@ -205,21 +220,65 @@ export class RequestDigests {
     }
     for (const key of own) {
       const descriptor = Object.getOwnPropertyDescriptor(error, key);
-      let field: unknown;
-      try {
-        field = (error as unknown as Record<string, unknown>)[key];
-      } catch {
-        // A getter that throws on the error itself: nothing to print, so nothing to carry.
-        continue;
-      }
-      Object.defineProperty(copy, key, {
-        value: this.redacted(field, seen, depth + 1),
-        enumerable: descriptor?.enumerable ?? false,
-        writable: true,
-        configurable: true,
-      });
+      this.defineField(
+        copy,
+        this.redactedText(key),
+        this.redacted(this.fieldOf(error, key), seen, depth + 1),
+        descriptor
+      );
     }
+    this.inheritedGetters(error).forEach((descriptor, key) => {
+      if (own.indexOf(key) < 0) {
+        this.defineField(copy, key, this.redacted(this.fieldOf(error, key), seen, depth + 1), descriptor);
+      }
+    });
     return copy;
+  }
+
+  /** The accessor fields the error's own classes declare — between the error and `Error.prototype` — nearest class first. */
+  private inheritedGetters(error: Error): Map<string, PropertyDescriptor> {
+    const getters = new Map<string, PropertyDescriptor>();
+    for (
+      let prototype = Object.getPrototypeOf(error);
+      prototype && prototype !== Error.prototype && prototype !== Object.prototype;
+      prototype = Object.getPrototypeOf(prototype)
+    ) {
+      for (const key of Object.getOwnPropertyNames(prototype)) {
+        const descriptor = Object.getOwnPropertyDescriptor(prototype, key);
+        if (descriptor?.get && !getters.has(key)) {
+          getters.set(key, descriptor);
+        }
+      }
+    }
+    return getters;
+  }
+
+  /** A data field on the copy with the visibility the original's field had. */
+  private defineField(target: object, key: string, value: unknown, descriptor: PropertyDescriptor | undefined): void {
+    Object.defineProperty(target, key, {
+      value,
+      enumerable: descriptor?.enumerable ?? false,
+      writable: true,
+      configurable: true,
+    });
+  }
+
+  /** An object's own enumerable field names, or `undefined` when it refuses to list them (a proxy that throws). */
+  private keysOf(value: object): string[] | undefined {
+    try {
+      return Object.keys(value);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** `value[key]`, or the unreadable marker when the read itself throws (a getter that throws). */
+  private fieldOf(value: object, key: string): unknown {
+    try {
+      return (value as Record<string, unknown>)[key];
+    } catch {
+      return RequestDigests.UNREADABLE;
+    }
   }
 
   /** A text with every address in it — bare or URL-encoded — replaced by its address digest. */

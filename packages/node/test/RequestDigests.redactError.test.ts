@@ -150,4 +150,102 @@ describe('RequestDigests.redactError', () => {
 
     expect(digests.redactError(error).message).toBe('Session ID unknown (code 1) at 10:42 — retry later');
   });
+
+  it('a field named by an address — a per-recipient map, an own field — is renamed to the digest', () => {
+    const error = Object.assign(new Error('some recipients failed'), {
+      failed: { 'Ada@Example.com': 'mailbox full', 'grace@example.org': { reason: 'unknown user' } },
+      'ada@example.com': 'own field named by the address',
+    });
+
+    const redacted = digests.redactError(error) as Error & { failed: Record<string, unknown> };
+
+    expect(redacted.failed).toEqual({
+      [digests.address('ada@example.com')]: 'mailbox full',
+      [digests.address('grace@example.org')]: { reason: 'unknown user' },
+    });
+    expect(Object.keys(redacted).sort()).toEqual([digests.address('ada@example.com'), 'failed']);
+    expect(addressesIn(inspect(redacted, { depth: null }))).toEqual([]);
+    expect(Object.keys(error.failed)).toEqual(['Ada@Example.com', 'grace@example.org']);
+  });
+
+  it('bytes are dropped, never carried unread: a response body whose bytes spell an address', () => {
+    const body = Buffer.from('550 <ada@example.com> rejected');
+    const error = Object.assign(new Error('the server answered'), { body, raw: new Uint8Array([1, 2, 3]) });
+
+    const redacted = digests.redactError(error) as Error & { body: unknown; raw: unknown };
+
+    expect(redacted.body).toBe(`[dropped: binary, ${body.byteLength} bytes]`);
+    expect(redacted.raw).toBe('[dropped: binary, 3 bytes]');
+    expect(addressesIn(String(redacted.body))).toEqual([]);
+    expect(addressesIn(JSON.stringify(redacted))).toEqual([]);
+    expect(String(error.body)).toContain('ada@example.com');
+  });
+
+  it('never throws on its way to a log: a field that throws when read, an object whose fields cannot be listed', () => {
+    const error = new Error('the write failed for ada@example.com') as Error & { detail?: unknown; opaque?: unknown };
+    error.detail = Object.defineProperty({ kept: 'grace@example.org' }, 'boom', {
+      get() {
+        throw new Error('not now');
+      },
+      enumerable: true,
+    });
+    error.opaque = new Proxy(
+      {},
+      {
+        ownKeys() {
+          throw new Error('no keys');
+        },
+      }
+    );
+
+    const redacted = digests.redactError(error);
+
+    expect(redacted.message).toBe(`the write failed for ${digests.address('ada@example.com')}`);
+    expect(redacted.detail).toEqual({ kept: digests.address('grace@example.org'), boom: '[dropped: unreadable]' });
+    expect(redacted.opaque).toBe('[dropped: unreadable]');
+  });
+
+  it("an error whose name, message and code live behind its class's getters (as a DOMException keeps them) still reads and prints as itself", () => {
+    // The shape of Node's DOMException — the error a fetch abort or timeout throws: the fields live
+    // in a slot keyed by the instance, and each getter refuses any other `this`. (A same-realm
+    // stand-in: the test runner's DOMException comes from another realm.)
+    const slots = new WeakMap<object, { name: string; message: string; code: number }>();
+    class SlotError extends Error {
+      constructor(message: string, name: string, code: number) {
+        super();
+        Object.setPrototypeOf(this, SlotError.prototype);
+        slots.set(this, { name, message, code });
+      }
+      private get slot() {
+        const slot = slots.get(this);
+        if (!slot) {
+          throw new TypeError('Value of "this" must be of SlotError');
+        }
+        return slot;
+      }
+      get name() {
+        return this.slot.name;
+      }
+      get message() {
+        return this.slot.message;
+      }
+      get code() {
+        return this.slot.code;
+      }
+    }
+    const error = new SlotError('The operation was aborted for ada@example.com', 'AbortError', 20);
+
+    const redacted = digests.redactError(error);
+
+    expect(redacted).toBeInstanceOf(SlotError);
+    expect(redacted.name).toBe('AbortError');
+    expect(redacted.message).toBe(`The operation was aborted for ${digests.address('ada@example.com')}`);
+    expect(redacted.code).toBe(20);
+    expect(redacted.stack?.split('\n').slice(1)).toEqual(error.stack?.split('\n').slice(1));
+    expect(addressesIn(inspect(redacted))).toEqual([]);
+    expect(
+      addressesIn(JSON.stringify({ name: redacted.name, message: redacted.message, stack: redacted.stack }))
+    ).toEqual([]);
+    expect(error.message).toContain('ada@example.com');
+  });
 });
