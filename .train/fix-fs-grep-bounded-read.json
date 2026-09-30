@@ -1,0 +1,12 @@
+{
+  "branch": "fix/fs-grep-bounded-read",
+  "packages": [
+    "node"
+  ],
+  "suites": [
+    "packages/node/test/Fs.getFilePathsMatchingGlob.test.ts",
+    "packages/node/test/Fs.grep.test.ts",
+    "packages/node/test/cmd.maxStdoutLines.test.ts"
+  ],
+  "removes": []
+}
