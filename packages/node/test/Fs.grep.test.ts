@@ -4,8 +4,7 @@ import * as path from 'path';
 import { Fs } from '../src/Fs';
 
 /**
- * Two findings on `Fs.grep` from the sandbox's grep door (capability-agent's
- * `DevelopmentWorkspace.grep`, ask 1553):
+ * Two findings on `Fs.grep` from a consumer's grep tool:
  *
  * (1) Given a FILE as its path it used the path as the child's cwd, and the model read
  *     "spawn ENOTDIR". The law: a path that is a file searches that file (rows relative to it,
