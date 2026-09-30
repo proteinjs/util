@@ -174,20 +174,28 @@ export class Fs {
    * - Literal search (-F) to avoid regex surprises like "parentheses not balanced"
    * - Recursive (-R), show file and line (-nH), no color, ignore binary (-I)
    * - Excludes heavy dirs: node_modules, dist, .git, generated, protein
+   * - `dir` is the search path: a directory is searched recursively from within (rows
+   *   `./rel:line:text`); a FILE is searched alone, from its directory by name (rows
+   *   `name:line:text`); a path that is neither rejects with `no such file or directory: <path>` —
+   *   never a spawn error (ask 1553: a file as the child's cwd read "spawn ENOTDIR")
    * - Optional maxColumns (default 500) truncates each output line via `cut -c1-N`
-   * - Returns { code, stdout, stderr } without throwing on non-zero exit codes.
+   * - Optional maxLines: the child is ended at that many matching lines and the result holds exactly
+   *   them (`cmd`'s `maxStdoutLines`; the ended child is not an error) — a consumer's page bound is
+   *   also the work bound (ask 1553: every hit was read into memory before the consumer paged)
+   * - Resolves { code, stdout, stderr }; rejects on a non-zero exit (grep's 1 = no matches, 2 = failure).
    */
   static async grep(params: {
     pattern: string;
-    dir?: string; // search root; defaults to process.cwd()
-    maxResults?: number; // passed as -m <N>
+    dir?: string; // the search path — a directory, or a file to search alone; defaults to process.cwd()
+    maxResults?: number; // passed as -m <N> (grep's per-FILE cap)
     maxColumns?: number; // truncates each output line via cut -c1-N (default 500). Set <=0 to disable.
+    maxLines?: number; // total matching lines to read; the child is ended past it
   }): Promise<{ code: number; stdout: string; stderr: string }> {
-    const { pattern, dir, maxResults, maxColumns } = params || {};
+    const { pattern, dir, maxResults, maxColumns, maxLines } = params || {};
     if (!pattern || typeof pattern !== 'string') {
       throw new Error('Fs.grep: "pattern" (string) is required.');
     }
-    const cwd = dir || process.cwd();
+    const { cwd, target } = await Fs.grepTarget(dir || process.cwd());
 
     const args: string[] = [
       '-R', // recurse
@@ -210,43 +218,54 @@ export class Fs {
     }
 
     // Use -e to ensure the pattern is treated as a single argument
-    args.push('-e', pattern, '.');
+    args.push('-e', pattern, target);
 
     // Helper to shell-escape args when we build a pipeline string
     const shEscape = (s: string) => `'${String(s).replace(/'/g, `'\\''`)}'`;
 
     const cols = typeof maxColumns === 'number' ? maxColumns : 500;
 
-    if (cols > 0) {
-      // Truncate with cut; preserve grep's exit code using pipefail
-      const grepCmd = ['grep', ...args].map(shEscape).join(' ');
-      const pipeline = `set -o pipefail; ${grepCmd} | cut -c1-${cols}`;
-      const res = await cmd(
-        'bash',
-        ['-lc', pipeline],
-        { cwd },
-        {
-          omitLogs: {
-            stdout: { omit: true },
-            stderr: { omit: true },
-          },
-        }
-      );
-      return res; // { code: 0, stdout, stderr: '' } on success
-    } else {
-      // No truncation requested
-      const res = await cmd(
-        'grep',
-        args,
-        { cwd },
-        {
-          omitLogs: {
-            stdout: { omit: true },
-            stderr: { omit: true },
-          },
-        }
-      );
-      return res;
+    // cols > 0: truncate with cut, grep's exit code preserved by pipefail; else grep alone.
+    const grepCmd = ['grep', ...args].map(shEscape).join(' ');
+    const [command, commandArgs]: [string, string[]] =
+      cols > 0 ? ['bash', ['-lc', `set -o pipefail; ${grepCmd} | cut -c1-${cols}`]] : ['grep', args];
+
+    // `detached`: the child is its own process group, so `maxLines` ends grep, cut and the shell
+    // together, not the shell alone.
+    return await cmd(
+      command,
+      commandArgs,
+      { cwd, detached: true },
+      {
+        maxStdoutLines: maxLines,
+        omitLogs: {
+          stdout: { omit: true },
+          stderr: { omit: true },
+        },
+      }
+    );
+  }
+
+  /** The child's cwd and grep's target for a search path: a directory is searched from within
+   * (`.`), a file from its directory by name; a path that is neither a file nor a directory is
+   * named in the tool's own words. */
+  private static async grepTarget(searchPath: string): Promise<{ cwd: string; target: string }> {
+    let stat: Awaited<ReturnType<typeof fs.stat>>;
+    try {
+      stat = await fs.stat(searchPath);
+    } catch (error: unknown) {
+      const code = (error as { code?: string })?.code;
+      if (code === 'ENOENT' || code === 'ENOTDIR') {
+        throw new Error(`no such file or directory: ${searchPath}`);
+      }
+      throw error;
     }
+    if (stat.isDirectory()) {
+      return { cwd: searchPath, target: '.' };
+    }
+    if (stat.isFile()) {
+      return { cwd: path.dirname(searchPath), target: path.basename(searchPath) };
+    }
+    throw new Error(`no such file or directory: ${searchPath}`);
   }
 }
