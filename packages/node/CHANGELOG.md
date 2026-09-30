@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.11.2](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.11.1...@proteinjs/util-node@1.11.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* **util-node:** Fs.grep searches a file path, names a missing one, and bounds its read (maxLines) ([2173478](https://github.com/proteinjs/util/commit/21734783836bf28a5a2733e84d7f1d51638e2540))
+
+
+
+
+
 ## [1.11.1](https://github.com/proteinjs/util/compare/@proteinjs/util-node@1.11.0...@proteinjs/util-node@1.11.1) (2026-09-24)
 
 
