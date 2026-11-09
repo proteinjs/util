@@ -1,0 +1,11 @@
+{
+  "branch": "fix/casa-account-door-and-sessions",
+  "packages": [
+    "node"
+  ],
+  "suites": [
+    "packages/node/test/RequestDigests.redactError.test.ts",
+    "packages/node/test/RequestDigests.test.ts"
+  ],
+  "removes": []
+}

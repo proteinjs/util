@@ -15,6 +15,9 @@ import { types } from 'util';
  * - `coarseIp(address)` — the COARSE IP HASH: a keyed hash of the client address at the grain
  *   one device holds (an IPv4 address; an IPv6 /64, inside which a device rotates freely), so
  *   an operator can say "one device" and a throttle cannot be dodged by rotating inside a /64.
+ * - `session(sessionId)` — the SESSION DIGEST: a keyed hash of a session's id, so an operator
+ *   can place one session's lines together without the log carrying the id itself — a session
+ *   id in a log is a session token in a log; the digest opens nothing.
  *
  * Keyed with HMAC-SHA256 under a key DERIVED from the session secret — the one secret every
  * replica already shares; derived per label, never used raw, so no digest weakens the session's
@@ -64,6 +67,11 @@ export class RequestDigests {
     return this.digest('coarse-ip', this.coarsen(address.trim().toLowerCase()));
   }
 
+  /** The session digest of a session id, as the session middleware minted it. */
+  session(sessionId: string): string {
+    return this.digest('session-digest', sessionId);
+  }
+
   /**
    * A copy of `error` a log line may carry: every e-mail address in it — bare or URL-encoded —
    * swapped for its address digest, wherever it sits: the message, the stack, a `cause`, an
@@ -91,7 +99,7 @@ export class RequestDigests {
     const configured = this.options?.secret ?? process.env.SESSION_SECRET;
     if (!configured) {
       throw new Error(
-        'SESSION_SECRET is not set: the account digest, the address digest and the coarse IP hash need the key every replica shares'
+        'SESSION_SECRET is not set: the account digest, the address digest, the coarse IP hash and the session digest need the key every replica shares'
       );
     }
     return configured;

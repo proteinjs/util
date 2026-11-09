@@ -40,10 +40,24 @@ describe('RequestDigests', () => {
     expect(createHash('sha256').update('invitee@example.invalid').digest('hex')).not.toContain(digest);
   });
 
-  it('the three digests are separate: one value never reads as another', () => {
+  it('the four digests are separate: one value never reads as another', () => {
     expect(digests.account('203.0.113.7')).not.toBe(digests.coarseIp('203.0.113.7'));
     expect(digests.account('ada.lovelace@example.com')).not.toBe(digests.address('ada.lovelace@example.com'));
     expect(digests.address('203.0.113.7')).not.toBe(digests.coarseIp('203.0.113.7'));
+    expect(digests.session('203.0.113.7')).not.toBe(digests.coarseIp('203.0.113.7'));
+    expect(digests.session('ada.lovelace@example.com')).not.toBe(digests.account('ada.lovelace@example.com'));
+  });
+
+  it('the session digest is stable for one session id, keyed, no plain hash, and never the id or a part of it', () => {
+    const sessionId = 'K7xq2mZ9pL0vR3tW8yB1nC5dF6gH4jM2';
+    const digest = digests.session(sessionId);
+
+    expect(digest).toMatch(/^[0-9a-f]{16}$/);
+    expect(digests.session(sessionId)).toBe(digest);
+    expect(digests.session('K7xq2mZ9pL0vR3tW8yB1nC5dF6gH4jM3')).not.toBe(digest);
+    expect(new RequestDigests({ secret: 'another-secret' }).session(sessionId)).not.toBe(digest);
+    expect(createHash('sha256').update(sessionId).digest('hex')).not.toContain(digest);
+    expect(sessionId).not.toContain(digest);
   });
 
   it('the coarse IP hash is stable for one IPv4 address and differs for the next', () => {
